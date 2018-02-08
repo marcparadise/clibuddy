@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+lib = File.expand_path("../lib", __FILE__)
+
+require "clibuddy"
+require "clibuddy/parser"
+require "clibuddy/directives"
+
+parser = CrappyParser.new
+parser.load("sample.txt")
+root = RootDirective.new(parser)
+root.parse(parser)
+
+puts root
