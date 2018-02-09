@@ -1,95 +1,95 @@
+require "clibuddy/parser/errors"
+require "clibuddy/parser/source_listing"
+require "clibuddy/parser/source"
+
+
 module CLIBuddy
-  module ProtoType
+  module Prototype
     class CrappyParser
-      attr_accessor :lineno, :current_token
-      def initialize()
-        @lineno = 0
-        @remaining_line = ""
+      attr_reader :parent
+      def initialize(sources, parent = nil)
+        @parent = parent
+        @listing = sources
+        @depth = 0;
+        tmp = self
+        while (tmp.parent)
+          @depth += 2 # Keep it in line with indentation for now
+          tmp = tmp.parent
+        end
+
+
       end
 
-      def load(filename)
-        @content = File.readlines('foo')
-        self
+      def self.load(filename)
+        listing = Parser::SourceListing.new([])
+        line_no = 0
+        File.readlines(filename).map do |line|
+          line = line.rstrip
+          line_no += 1
+          if /^([\s]*)([^#].*)/.match(line)
+            # $1 - leading whitepsace
+            # $2 - anything that isn't whitespace
+            listing.add(Parser::SourceLine.new(line_no, $1.length, $2.rstrip))
+          else
+            # Line is only whitespace, or whitespace and comment.
+            next
+          end
+        end
+        CrappyParser.new(listing)
       end
 
-      def peek_token
-        token, _ = next_token(true)
-        token
+      def parser_from_children
+        children = @listing.prune_children()
+        listing = Parser::SourceListing.new(children, depth + 2)
+        puts "[Parser.#{__method__} D: #{@depth}] new child D:#{@depth+2} num_lines: #{listing.num_lines} currtoken at D#{@depth}: '#{current_token}' peek: #{peek_token}"
+        CrappyParser.new(listing, self)
+      end
+
+      def advance_line(allow_unprocessed = false)
+        puts "[Parser.#{__method__} D: #{@depth}] invoked"
+        @listing.advance_line
+      end
+
+      def debug_num_lines
+        @listing.num_lines
+      end
+
+      def current_token
+        @listing.bof? ? :BOF : @listing.current_line.current_token
       end
 
       def advance_token
-        @cur_token, @remaining_line = next_token(false)
-        @cur_token
+        @listing.bof? ? :BOF : @listing.current_line.next_token
       end
 
-      # This is a bit different - really only
-      # used when parsing error messages,
-      # which does not have the same rules
-      # as directives... here, we literally just
-      # grab the next line without worrying about
-      # its content.
-      def absolute_next_line(peek)
-        @lineno += 1
-        if @lineno >= @content.size
-          nil
-        else
-          @remaining_line = @content[@lineno]
-          @remaining_line
-        end
+      def consume_to_eol
+        @listing.bof? ? :EOL : @listing.current_line.join_remaining_tokens
       end
 
-      def remaining_line(peek)
-        if peek
-          @remaining_line
-        else
-          val = @remaining_line
-          @remaining_line = ""
-          advance_line
-          val
-        end
+      def empty?
+        @listing.nil? || (@listing.bof? && @listing.eof?)
       end
 
-      private
-
-      def peek_line
-        n = next_content_lineno
-        if n == :EOF
-          nil
-        else
-          content[n]
-        end
+      def eol?
+        @listing.bof? ? false : listing.current_line.eol?
       end
 
-      def advance_line
-        @lineno = next_content_lineno
-        @remaining_line = content[@lineno]
+      def peek_token
+        @listing.bof? ? :BOF : @listing.current_line.peek
+      end
+
+      def lineno
+        @listing.bof? ? 0 : @listing.current_line.number
       end
 
 
-      def next_token(peek)
-        local_line = if @remaining_line =~ /^[\s]*([#]+.*)?$/
-                         if (peek)
-                           peek_line()
-                         else
-                           advance_line()
-                         end
-                     else
-                       @remaining_line
-                     end
-        local_line.split(/^\s/, 2)
+      def depth
+        @listing.bof? ? 0 : @listing.current_line.depth
       end
 
-      def next_content_lineno
-        matching_line = lineno
-        max = content.size - 1
-        while matching_line < max
-          matching_line += 1
-          next if content[matching_line] =~ /^[\s]*([#]+.*)?$/
-          return matching_line
-        end
-        return :EOF
-      end
+      # def has_children?
+      #   @listing.eof? ? false : @listing.peek_line.depth > depth
+      # end
     end
-
   end
 end
