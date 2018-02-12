@@ -20,7 +20,7 @@ module CLIBuddy
       # TODO somewhere we need to parse the input against the command definition. IE, this allows us to know that
       # the first arg provided to the command is `HOST` when referenced in the actions later
 
-      flow = cmd.flow.find { |f| f.expression = input_cmd_args.join(" ") }
+      flow = cmd.flow.find { |f| f.expression == input_cmd_args.join(" ") }
       if flow.nil?
         raise "No flow defined for command [#{input_cmd}] args [#{input_cmd_args}]"
       end
@@ -34,6 +34,10 @@ module CLIBuddy
           end
           # TODO where do we do message formatting
           puts err.lines.join("\n")
+        when ".show-usage"
+          # TODO when user types `--help` then we show the full usage text, if they typo a command we show the short
+          # usage test
+          puts cmd.usage[:full]
         end
       end
     end

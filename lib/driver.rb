@@ -5,7 +5,7 @@ b = CLIBuddy::Builder.new()
 begin
   b.run("sample.txt")
   require 'pp'
-  pp b.commands
+  # pp b.commands
   puts "*"*20
   runner = CLIBuddy::Runner.new(b, ARGV[0], ARGV[1..-1])
   runner.run
