@@ -8,7 +8,7 @@ module CLIBuddy
         attr_reader :children
 
         def initialize(line_no, level, text)
-          puts "Adding '#{line_no} #{level} #{text}"
+          #puts "Adding '#{line_no} #{level} #{text}"
           @children = []
           @eol = false
           @past_tokens = []

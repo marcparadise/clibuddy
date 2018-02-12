@@ -41,12 +41,10 @@ module CLIBuddy
       def parser_from_children
         children = @listing.prune_children()
         listing = Parser::SourceListing.new(children, depth + 2)
-        puts "[Parser.#{__method__} D: #{@depth}] new child D:#{@depth+2} num_lines: #{listing.num_lines} currtoken at D#{@depth}: '#{current_token}' peek: #{peek_token}"
         CrappyParser.new(listing, self)
       end
 
       def advance_line(allow_unprocessed = false)
-        puts "[Parser.#{__method__} D: #{@depth}] invoked"
         @listing.advance_line
       end
 

@@ -86,18 +86,18 @@ module CLIBuddy
               false
             end
           end
-          puts "[SourceListing.#{__method__} D: #{depth}] REMAINING: #{@sources.length} "
-          puts "     source[0]: #{@sources[0]}"
-          puts "     source[1]: #{@sources[1]}"
-          puts "[SourceListing.#{__method__} D: #{depth}] do_prune results:"
-          subsection.each {|l| puts "    #{l}"}
+          # puts "[SourceListing.#{__method__} D: #{depth}] REMAINING: #{@sources.length} "
+          # puts "     source[0]: #{@sources[0]}"
+          # puts "     source[1]: #{@sources[1]}"
+          # puts "[SourceListing.#{__method__} D: #{depth}] do_prune results:"
+          # subsection.each {|l| puts "    #{l}"}
           subsection
 
         end
 
         def do_advance_line
           @current_line = @sources.shift
-          puts "[SourceListing.#{__method__} D: #{depth}] Lines left: #{@sources.length}. Current is now #{@current_line}"
+          # puts "[SourceListing.#{__method__} D: #{depth}] Lines left: #{@sources.length}. Current is now #{@current_line}"
           @current_line
         end
 
