@@ -1,4 +1,5 @@
 require "clibuddy/parser"
+require "clibuddy/runner"
 module CLIBuddy::Prototype
 
 
@@ -323,11 +324,20 @@ end
 b = CLIBuddy::Prototype::Main.new()
 begin
   b.run("sample.txt")
+  require 'pp'
+  pp b.commands
   puts "*"*20
-  puts "Commands: #{b.commands}"
-  puts "*"*20
-  puts "Messages: #{b.messages}"
-  puts "*"*20
+  runner = CLIBuddy::Runner.new(b, ARGV[0], ARGV[1..-1])
+  runner.run
+  # puts "*"*20
+  # puts "Commands: #{b.commands}"
+  # puts "*"*20
+  # puts "Messages: #{b.messages}"
+  # puts "*"*20
+
+  # parse the ARGV
+  # compare provided commands to the parsed command
+  # if it matches, follow the parsed flow
 
 rescue => e
   puts "Exception: #{e.message}"
