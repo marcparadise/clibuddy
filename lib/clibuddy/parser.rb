@@ -16,8 +16,6 @@ module CLIBuddy
           @depth += 2 # Keep it in line with indentation for now
           tmp = tmp.parent
         end
-
-
       end
 
       def self.load(filename)

@@ -231,7 +231,7 @@ module CLIBuddy
     end
 
     def parse_flow_actions(p, parent_action = nil)
-      spacer = ' '*caller.length
+      # spacer = ' '*caller.length
       if p.empty?
         where = parent_action.nil? ? "'for' clause" : "#{parent_action.directive}"
         parse_error! p.parent, "Expected at least one flow action indented beneath #{where}."

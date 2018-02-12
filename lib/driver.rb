@@ -19,10 +19,10 @@ begin
   # compare provided commands to the parsed command
   # if it matches, follow the parsed flow
 
-rescue => e
-  puts "Exception: #{e.message}"
-  puts e.backtrace
-  puts "State: "
-  puts b.commands
-  puts b.messages
+# rescue => e
+#   puts "Exception: #{e.message}"
+#   puts e.backtrace
+#   puts "State: "
+#   puts b.commands
+#   puts b.messages
 end
