@@ -42,8 +42,7 @@ module CLIBuddy
     def do_parallel(action)
       # TODO fail if we're a cild of a spinner?
       # For now, we just support multi-spiner for parallel
-      action.ui = ::TTY::Spinner::Multi.new("[:spinner] :status")
-      action.update(status: action.msg)
+      action.ui = ::TTY::Spinner::Multi.new("[:spinner] #{action.msg}")
     end
 
     def do_spinner(action)
