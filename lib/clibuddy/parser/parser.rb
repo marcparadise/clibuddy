@@ -1,23 +1,16 @@
-require "clibuddy/parser"
-module CLIBuddy::Prototype
-
+require "clibuddy/parser/lexer"
+require "clibuddy/parser/types"
 
   # TODO extend notation to include default value for param like
   # --use-secure USE_SECURE=true?
-  FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent)
-
-  FlowEntry = Struct.new(:expression, :actions)
-  Command = Struct.new(:name, :flow, :definition, :usage)
-  Message = Struct.new(:id, :lines)
-  CommandDefinition = Struct.new(:arguments)
-  CommandDefinitionArg = Struct.new(:name, :param, :description)
-  class Main
+module CLIBuddy::Prototype::Parser
+  class DefaultParser
     TIMESPEC_MATCH = /^((\d*[.]{0,1}\d++(?!%))(s)|(\d*)(ms))$/
     attr_reader :commands, :messages
     def run(descriptor_file)
       @commands = nil
       @messages = nil
-      p = CrappyParser::load(descriptor_file)
+      p = Lexer.load(descriptor_file)
       parse(p)
     end
 
@@ -320,19 +313,3 @@ module CLIBuddy::Prototype
   end
 end
 
-b = CLIBuddy::Prototype::Main.new()
-begin
-  b.run("sample.txt")
-  puts "*"*20
-  puts "Commands: #{b.commands}"
-  puts "*"*20
-  puts "Messages: #{b.messages}"
-  puts "*"*20
-
-rescue => e
-  puts "Exception: #{e.message}"
-  puts e.backtrace
-  puts "State: "
-  puts b.commands
-  puts b.messages
-end

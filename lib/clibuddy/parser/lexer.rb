@@ -3,9 +3,9 @@ require "clibuddy/parser/source_listing"
 require "clibuddy/parser/source"
 
 
-module CLIBuddy
-  module Prototype
-    class CrappyParser
+module CLIBuddy::Parser
+  module Parser
+    class Lexer
       attr_reader :parent
       def initialize(sources, parent = nil)
         @parent = parent
@@ -16,8 +16,6 @@ module CLIBuddy
           @depth += 2 # Keep it in line with indentation for now
           tmp = tmp.parent
         end
-
-
       end
 
       def self.load(filename)
@@ -35,13 +33,13 @@ module CLIBuddy
             next
           end
         end
-        CrappyParser.new(listing)
+        Lexer.new(listing)
       end
 
       def parser_from_children
         children = @listing.prune_children()
         listing = Parser::SourceListing.new(children, depth + 2)
-        CrappyParser.new(listing, self)
+        Lexer.new(listing, self)
       end
 
       def advance_line(allow_unprocessed = false)

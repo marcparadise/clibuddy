@@ -1,13 +1,21 @@
 #!/usr/bin/env ruby
-lib = File.expand_path("../lib", __FILE__)
+require "clibuddy/parser/default_parser"
 
-require "clibuddy"
-require "clibuddy/parser"
-require "clibuddy/directives"
+b = CLIBuddy::Prototype::Parser::DefaultParser.new()
 
-parser = CrappyParser.new
-parser.load("sample.txt")
-root = RootDirective.new(parser)
-root.parse(parser)
+begin
+  b.run("sample.txt")
+  puts "*"*20
+  puts "Commands: #{b.commands}"
+  puts "*"*20
+  puts "Messages: #{b.messages}"
+  puts "*"*20
+rescue => e
+  puts "Exception: #{e.message}"
+  puts e.backtrace
+  puts "State: "
+  puts b.commands
+  puts b.messages
+end
 
-puts root
+
