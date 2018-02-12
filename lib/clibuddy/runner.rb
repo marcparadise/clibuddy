@@ -1,3 +1,6 @@
+# TODO - ui elements to split out.
+require "tty-spinner"
+
 module CLIBuddy
   class Runner
     attr_reader :parser, :input_cmd, :input_cmd_args, :cmd
@@ -18,45 +21,96 @@ module CLIBuddy
       run_flow_actions(flow.actions)
     end
 
-    def run_flow_actions(actions)
-      actions.each do |action|
-        if action.delay != nil
-          do_delay(action.delay)
-        end
+    def child_of_parallel?(action)
+      action.parent && action.parent.directive == ".parallel"
+    end
 
-        case action.directive
-        when ".show-error"
-          err = lookup_message(action.args)
-          if err.nil?
-            raise "No message defined for name [#{action.args}]"
-          end
-          # TODO where do we do message formatting
-          puts err.lines.join("\n")
-        when ".show-usage"
-          # TODO when user types `--help` then we show the full usage text plus usage string,
-          # if they typo a command/used unrecognized arguments we show the short usage test plus usage string.
-          puts cmd.usage[:full]
-        end
-      end
-      if action.children.length > 0
+    def run_flow_actions(actions)
+      return if actions.nil? || actions.empty?
+      actions.each do |action|
+        # TODO this gets weird for parallel spinners -
+        # we have to register them all first, then
+        # we can start autospin.  I'm tihnking
+        # we'll just build jobs that consist of updates for them...
+        maybe_delay(action.delay)
+        name = action.directive.gsub(/^./, "").gsub(/-/, "_")
+        self.send("do_#{name}".to_sym, action)
         run_flow_actions(action.children)
       end
     end
 
-    def do_delay(delay_spec)
+    def do_parallel(action)
+      # TODO fail if we're a cild of a spinner?
+      # For now, we just support multi-spiner for parallel
+      action.ui = ::TTY::Spinner::Multi.new("[:spinner] :status")
+      action.update(status: action.msg)
+    end
+
+    def do_spinner(action)
+      if child_of_parallel? action
+        action.ui = action.parent.ui.register("[:spinner] :status")
+      else
+        action.ui = ::TTY::Spinner::new("[:spinner] :status")
+        # TODO - don't forget rendering and substitution in text...
+        action.ui.update status: action.msg
+        action.ui.auto_spin
+      end
+
+    end
+
+    def do_show_text(action)
+      if action.parent && action.parent.directive == ".spinner"
+        action.parent.ui.update(status: action.msg)
+      else
+        puts action.msg
+      end
+    end
+
+    def do_failure(action)
+      if action.parent && action.parent.directive == ".spinner"
+        action.parent.ui.update(status: "")
+        action.parent.ui.error(action.msg)
+      else
+        puts action.msg
+      end
+    end
+
+    def do_success(action)
+      if action.parent && action.parent.directive == ".spinner"
+        action.parent.ui.update(status: "")
+        action.parent.ui.success(action.msg)
+      else
+        puts action.msg
+      end
+    end
+    def do_show_error(action)
+      err = lookup_message(action.args)
+      # TODO formatting and substitution
+      puts err.join("\n")
+    end
+
+    def do_show_usage()
+      # TODO when user types `--help` then we show the full usage text plus usage string,
+      # if they typo a command/used unrecognized arguments we show the short usage test plus usage string.
+      puts @cmd.usage[:full]
+    end
+
+    def maybe_delay(delay_spec)
+      return if delay_spec.nil?
       case delay_spec[:unit]
-        when :ms
-          sleep(1.0 / delay_spec[:value])
-        when :s
-          sleep(delay_spec[:value])
-        end
+      when :ms
+        sleep(1.0 / delay_spec[:value])
+      when :s
+        sleep(delay_spec[:value])
+      end
     end
 
     def lookup_flow(expr)
-      flow = cmd.flow.find { |f| f.expression == expr }
+      flow = @cmd.flow.find { |f| f.expression == expr }
       if flow.nil?
         raise "No flow defined for command [#{input_cmd}] args #{expr}"
       end
+      flow
     end
 
     def lookup_command(name)
@@ -71,11 +125,10 @@ module CLIBuddy
     def lookup_message(name)
       msg = parser.messages.find { |m| m.id == name }
       if msg.nil?
-        "#{name} This message is not defined yet."
+        "#{name} This message is not defined yet. Make sure you add it to the 'messages' section!"
       else
-        msg
+        msg.values
       end
     end
-
   end
 end

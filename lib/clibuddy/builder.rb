@@ -3,7 +3,7 @@ require "clibuddy/parser"
 module CLIBuddy
   # TODO extend notation to include default value for param like
   # --use-secure USE_SECURE=true?
-  FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent)
+  FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent, :ui)
 
   FlowEntry = Struct.new(:expression, :actions)
   Command = Struct.new(:name, :flow, :definition, :usage)
@@ -35,7 +35,6 @@ module CLIBuddy
         when 'commands'
           if @commands.nil?
             @commands = parse_commands_block(p.parser_from_children)
-            puts "Commands loaded!"
           else
             parse_error! p, "Unexpected 'commands', 'commands' directive already given above."
           end
