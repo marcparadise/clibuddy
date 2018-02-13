@@ -264,6 +264,8 @@ module CLIBuddy
           parse_timespec_msg_for_action(p, action)
 
         when ".parallel"
+          action.msg = p.consume_to_eol
+
           # We'll probably want to validate that the actions we get back are
           # valid to be under parallel. Perhaps modify this parse_flow_actionrses
           # to include a list of acceptable matches? Or validate after parsing to
