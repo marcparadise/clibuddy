@@ -28,37 +28,60 @@ module CLIBuddy
     def run_flow_actions(actions)
       return if actions.nil? || actions.empty?
       actions.each do |action|
-        # TODO this gets weird for parallel spinners -
-        # we have to register them all first, then
-        # we can start autospin.  I'm tihnking
-        # we'll just build jobs that consist of updates for them...
-        maybe_delay(action.delay)
+        maybe_delay(action)
+
+        # invoke do_DIRECTIVE
         name = action.directive.gsub(/^./, "").gsub(/-/, "_")
         self.send("do_#{name}".to_sym, action)
+
+        # invoke do_post_DIRECTIVE if it exists
+        post_action = "do_post_#{name}".to_sym
         run_flow_actions(action.children)
+        if respond_to? post_action
+          self.send(post_action, action)
+        end
       end
     end
 
+    ######
+
     def do_parallel(action)
-      # TODO fail if we're a cild of a spinner?
-      # For now, we just support multi-spiner for parallel
-      action.ui = ::TTY::Spinner::Multi.new("[:spinner] #{action.msg}")
+      # For now, we just support multi-spinner for parallel
+      # Other options could include progress bar, or
+      # plain text refreshed inline.
+      action.ui = ::TTY::Spinner::Multi.new("[:spinner] #{action.msg}", format: :spin)
+    end
+
+    def do_post_parallel(action)
+      # This 'post' function is called after child components are setup for
+      # we'll invoke ui.auto_spin  here, which will start the spinners and execute their jobs -
+      # which are just further calls into run_flow_actions
+      action.ui.auto_spin
     end
 
     def do_spinner(action)
       if child_of_parallel? action
         action.ui = action.parent.ui.register("[:spinner] :status")
+        action.ui.update status: action.msg
+        # We're going to take the children of this spinner
+        # so that we can run them async as a spinner job
+        adoptees = action.children
+        action.children = []
+        action.ui.job do |_spinner|
+          run_flow_actions(adoptees)
+        end
+
       else
         action.ui = ::TTY::Spinner::new("[:spinner] :status")
         # TODO - don't forget rendering and substitution in text...
-        action.ui.update status: action.msg
         action.ui.auto_spin
       end
-
     end
 
     def do_show_text(action)
-      if action.parent && action.parent.directive == ".spinner"
+      p_directive = action.parent ? action.parent.directive : nil
+      case p_directive
+      when ".spinner"
         action.parent.ui.update(status: action.msg)
       else
         puts action.msg
@@ -66,22 +89,29 @@ module CLIBuddy
     end
 
     def do_failure(action)
-      if action.parent && action.parent.directive == ".spinner"
-        action.parent.ui.update(status: "")
-        action.parent.ui.error(action.msg)
+      p_directive = action.parent ? action.parent.directive : nil
+      case p_directive
+      when ".spinner"
+        action.parent.ui.update(status: action.msg)
+        action.parent.ui.error
       else
-        puts action.msg
+        # TODO - it'll make sense to create aa corresponding UI element so that we can just
+        # blindly ui.update...
+        puts "red-x! #{action.msg}"
       end
     end
 
     def do_success(action)
-      if action.parent && action.parent.directive == ".spinner"
-        action.parent.ui.update(status: "")
-        action.parent.ui.success(action.msg)
+      p_directive = action.parent ? action.parent.directive : nil
+      case p_directive
+      when ".spinner"
+        action.parent.ui.update(status: action.msg)
+        action.parent.ui.success
       else
-        puts action.msg
+        puts "green-checkmark! #{action.msg}"
       end
     end
+
     def do_show_error(action)
       err = lookup_message(action.args)
       # TODO formatting and substitution
@@ -94,8 +124,10 @@ module CLIBuddy
       puts @cmd.usage[:full]
     end
 
-    def maybe_delay(delay_spec)
-      return if delay_spec.nil?
+    def maybe_delay(action)
+      return if action.delay.nil?
+      return if child_of_parallel?(action)
+      delay_spec = action.delay
       case delay_spec[:unit]
       when :ms
         sleep(1.0 / delay_spec[:value])
