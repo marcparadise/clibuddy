@@ -12,6 +12,7 @@ module CLIBuddy
       @input_cmd = input_cmd
       @input_cmd_args = input_cmd_args
       @cmd = lookup_command(input_cmd)
+
     end
 
     def run
@@ -49,7 +50,7 @@ module CLIBuddy
       # For now, we just support multi-spinner for parallel
       # Other options could include progress bar, or
       # plain text refreshed inline.
-      action.ui = ::TTY::Spinner::Multi.new("[:spinner] #{action.msg}", format: :spin)
+      action.ui = ::TTY::Spinner::Multi.new(":spinner #{action.msg}", format: :spin)
     end
 
     def do_post_parallel(action)
@@ -61,7 +62,7 @@ module CLIBuddy
 
     def do_spinner(action)
       if child_of_parallel? action
-        action.ui = action.parent.ui.register("[:spinner] :status")
+        action.ui = action.parent.ui.register(":spinner :status")
         action.ui.update status: action.msg
         # We're going to take the children of this spinner
         # so that we can run them async as a spinner job
@@ -72,7 +73,8 @@ module CLIBuddy
         end
 
       else
-        action.ui = ::TTY::Spinner::new("[:spinner] :status")
+        action.ui = ::TTY::Spinner::new(":spinner :status")
+        action.ui.update status: action.msg
         # TODO - don't forget rendering and substitution in text...
         action.ui.auto_spin
       end
@@ -97,7 +99,8 @@ module CLIBuddy
       else
         # TODO - it'll make sense to create aa corresponding UI element so that we can just
         # blindly ui.update...
-        puts "red-x! #{action.msg}"
+        action.ui = ::TTY::Spinner::new(":spinner #{action.msg}", format: :spin)
+        action.ui.error
       end
     end
 
@@ -108,7 +111,9 @@ module CLIBuddy
         action.parent.ui.update(status: action.msg)
         action.parent.ui.success
       else
-        puts "green-checkmark! #{action.msg}"
+        # Unspun spinners double as simple success/failure indicators
+        action.ui = ::TTY::Spinner::new(":spinner #{action.msg}", format: :spin)
+        action.ui.success
       end
     end
 
