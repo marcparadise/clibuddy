@@ -247,8 +247,11 @@ module CLIBuddy
         when /^[.](show-text|success|failure)$/
           # TODO - each of these ^ is its own action which accepts a time param.
           # TODO - checking for which ones are allowed to be children
-          if action.parent && action.parent.directive == ".spinner"
+          if action.parent && (action.parent.directive == ".spinner" || action.parent.directive == ".parallel")
             # each of these under a spinner must include a timespec
+            # TODO - can't any of these be delayed in any context? Why limit to spinnner
+            # and parallel? While we reqiure timespec for children of par/spin, we should accept
+            # it regardless.
             parse_timespec_msg_for_action(p, action)
           else
             action.msg = p.consume_to_eol
@@ -257,7 +260,7 @@ module CLIBuddy
             end
           end
         when /^[.]after$/ # shortcut for .show-text after Xs MSG
-          action.directive == ".show-directive"
+          action.directive == ".show-text"
           parse_timespec_msg_for_action(p, action)
 
         when ".parallel"
