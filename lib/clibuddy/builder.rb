@@ -1,23 +1,23 @@
+
 require "clibuddy/parser"
-module CLIBuddy::Prototype
-
-
+module CLIBuddy
   # TODO extend notation to include default value for param like
   # --use-secure USE_SECURE=true?
-  FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent)
+  FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent, :ui)
 
   FlowEntry = Struct.new(:expression, :actions)
   Command = Struct.new(:name, :flow, :definition, :usage)
   Message = Struct.new(:id, :lines)
   CommandDefinition = Struct.new(:arguments)
   CommandDefinitionArg = Struct.new(:name, :param, :description)
-  class Main
+  class Builder
+
     TIMESPEC_MATCH = /^((\d*[.]{0,1}\d++(?!%))(s)|(\d*)(ms))$/
     attr_reader :commands, :messages
     def run(descriptor_file)
       @commands = nil
       @messages = nil
-      p = CrappyParser::load(descriptor_file)
+      p = Prototype::CrappyParser::load(descriptor_file)
       parse(p)
     end
 
@@ -35,7 +35,6 @@ module CLIBuddy::Prototype
         when 'commands'
           if @commands.nil?
             @commands = parse_commands_block(p.parser_from_children)
-            puts "Commands loaded!"
           else
             parse_error! p, "Unexpected 'commands', 'commands' directive already given above."
           end
@@ -231,7 +230,7 @@ module CLIBuddy::Prototype
     end
 
     def parse_flow_actions(p, parent_action = nil)
-      spacer = ' '*caller.length
+      # spacer = ' '*caller.length
       if p.empty?
         where = parent_action.nil? ? "'for' clause" : "#{parent_action.directive}"
         parse_error! p.parent, "Expected at least one flow action indented beneath #{where}."
@@ -248,8 +247,11 @@ module CLIBuddy::Prototype
         when /^[.](show-text|success|failure)$/
           # TODO - each of these ^ is its own action which accepts a time param.
           # TODO - checking for which ones are allowed to be children
-          if action.parent && action.parent.directive == ".spinner"
+          if action.parent && (action.parent.directive == ".spinner" || action.parent.directive == ".parallel")
             # each of these under a spinner must include a timespec
+            # TODO - can't any of these be delayed in any context? Why limit to spinnner
+            # and parallel? While we reqiure timespec for children of par/spin, we should accept
+            # it regardless.
             parse_timespec_msg_for_action(p, action)
           else
             action.msg = p.consume_to_eol
@@ -258,10 +260,12 @@ module CLIBuddy::Prototype
             end
           end
         when /^[.]after$/ # shortcut for .show-text after Xs MSG
-          action.directive == ".show-directive"
+          action.directive == ".show-text"
           parse_timespec_msg_for_action(p, action)
 
         when ".parallel"
+          action.msg = p.consume_to_eol
+
           # We'll probably want to validate that the actions we get back are
           # valid to be under parallel. Perhaps modify this parse_flow_actionrses
           # to include a list of acceptable matches? Or validate after parsing to
@@ -318,21 +322,4 @@ module CLIBuddy::Prototype
       message_lines
     end
   end
-end
-
-b = CLIBuddy::Prototype::Main.new()
-begin
-  b.run("sample.txt")
-  puts "*"*20
-  puts "Commands: #{b.commands}"
-  puts "*"*20
-  puts "Messages: #{b.messages}"
-  puts "*"*20
-
-rescue => e
-  puts "Exception: #{e.message}"
-  puts e.backtrace
-  puts "State: "
-  puts b.commands
-  puts b.messages
 end
