@@ -1,13 +1,14 @@
-
+require "clibuddy"
 require "clibuddy/parser"
+
 module CLIBuddy
   # TODO extend notation to include default value for param like
   # --use-secure USE_SECURE=true?
   FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent, :ui)
 
   FlowEntry = Struct.new(:expression, :actions)
-  Command = Struct.new(:name, :flow, :definition, :usage)
   Message = Struct.new(:id, :lines)
+  Command = Struct.new(:name, :flow, :definition, :usage)
   CommandDefinition = Struct.new(:arguments, :flags)
   CommandArg = Struct.new(:name, :description)
   CommandFlag = Struct.new(:flag, :arg, :short, :description)
