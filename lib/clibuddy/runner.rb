@@ -126,10 +126,17 @@ module CLIBuddy
     def do_show_usage(action)
       usage = Formatters::CommandUsageFormatter.new(@cmd)
       puts usage.long_usage_text
-      args_table = usage.long_usage_detail_table
-      puts args_table.render(:basic, multiline: true, resize: true,
-                             alignments: [:right, :left])
+      args = TTY::Table.new(usage.arguments)
+      flags = TTY::Table.new(usage.flags)
 
+      puts "Arguments:"
+      puts args.render(:basic, multiline: true, resize: true,
+                       alignments: [:right, :left],
+                       column_widths: [0, 40])
+      puts "\nFlags:"
+      puts flags.render(:basic, multiline: true, resize: true,
+                       alignments: [:right, :left],
+                       column_widths: [0, 40])
     end
 
     def maybe_delay(action)
