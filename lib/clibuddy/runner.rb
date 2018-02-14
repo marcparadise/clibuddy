@@ -152,11 +152,11 @@ module CLIBuddy
     end
 
     def lookup_command(name, provided_args)
-      cmd = parser.commands.find { |c| c.name == name }
+      cmd = parser.lookup_command(name)
       if cmd.nil?
         # TODO how do we differentiate between runtime errors and flow "errors" that are supposed to happen
         # A: we can do differently-formatted exception handling that makes it clear.
-        raise "No command matches [#{name}]"
+        raise "No command matches '#{name}'"
       end
       InterpretedCommand.new(cmd, provided_args)
     end
