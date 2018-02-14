@@ -1,9 +1,5 @@
 #!/usr/bin/env ruby
 
-require "clibuddy/builder"
-require "clibuddy/runner"
+require "clibuddy/main"
 
-b = CLIBuddy::Builder.new()
-b.run("sample.txt")
-runner = CLIBuddy::Runner.new(b, ARGV[0], ARGV[1..-1])
-runner.run
+CLIBuddy::Main.new().run(ARGV.shift, ARGV.shift, ARGV)

@@ -16,11 +16,15 @@ module CLIBuddy
   class Builder
     TIMESPEC_MATCH = /^((\d*[.]{0,1}\d++(?!%))(s)|(\d*)(ms))$/
     attr_reader :commands, :messages
-    def run(descriptor_file)
+    def load(descriptor_file)
       @commands = nil
       @messages = nil
-      p = Prototype::CrappyParser::load(descriptor_file)
-      parse(p)
+      @root_parser = Prototype::CrappyParser::load(descriptor_file)
+      parse(@root_parser)
+    end
+
+    def lookup_command(name)
+      @commands.find { |c| c.name == name }
     end
 
     def parse_error!(parser, message)
