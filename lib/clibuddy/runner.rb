@@ -1,6 +1,6 @@
 # TODO - ui elements to split out.
 require "tty-spinner"
-
+require "clibuddy/formatters"
 module CLIBuddy
   class Runner
     attr_reader :parser, :input_cmd, :input_cmd_args, :cmd
@@ -123,10 +123,20 @@ module CLIBuddy
       puts err.join("\n")
     end
 
-    def do_show_usage()
-      # TODO when user types `--help` then we show the full usage text plus usage string,
-      # if they typo a command/used unrecognized arguments we show the short usage test plus usage string.
-      puts @cmd.usage[:full]
+    def do_show_usage(action)
+      usage = Formatters::CommandUsageFormatter.new(@cmd)
+      puts usage.long_usage_text
+      args = TTY::Table.new(usage.arguments)
+      flags = TTY::Table.new(usage.flags)
+
+      puts "Arguments:"
+      puts args.render(:basic, multiline: true, resize: true,
+                       alignments: [:right, :left],
+                       column_widths: [0, 40])
+      puts "\nFlags:"
+      puts flags.render(:basic, multiline: true, resize: true,
+                       alignments: [:right, :left],
+                       column_widths: [0, 40])
     end
 
     def maybe_delay(action)
