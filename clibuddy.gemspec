@@ -32,6 +32,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency("tty-spinner")
   spec.add_dependency("tty-screen")
   spec.add_dependency("tty-table")
+  spec.add_dependency("pastel")
 
   spec.add_development_dependency "bundler", "~> 1.16"
   spec.add_development_dependency "rake", "~> 10.0"

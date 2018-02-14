@@ -1,36 +1,7 @@
-# TODO split to files
-require "tty-screen"
-require "tty-table"
+require "clibuddy/formatters/text_formatter"
 
 module CLIBuddy
   module Formatters
-    class TextFormatter
-      # Simple for now, we'll probably want specific handling based
-      # on the type of output so that we can align things, etc
-      # TODO - escape sequences, etc should not count against length.
-      def self.wrap_for_term(string, first_line_prefix = "", max_length = nil)
-        max_w = max_length || TTY::Screen.width
-        indent_s = ""
-        len = first_line_prefix.length
-        if len > 0
-          first_line_prefix = "#{first_line_prefix} "
-          len += 1
-          indent_s = " "*(len)
-          max_w = max_w - len
-        end
-        lines = string.scan(/\S.{0,#{max_w}}\S(?=\s|$)|\S+/)
-        x = 0
-
-        lines = lines.map do |line|
-          filler = (x == 0 ? "#{first_line_prefix} " : indent_s)
-          x += 1
-          "#{filler}#{line}"
-        end
-
-        lines.join("\n")
-      end
-    end
-
     class CommandUsageFormatter
       def initialize(cmd)
         @cmd = cmd
@@ -42,18 +13,18 @@ module CLIBuddy
           val << " #{f.arg}" if f.arg?
         end.join(" ")
 
-        usage = TextFormatter.wrap_for_term("#{@cmd.name} #{args}#{flags}", "Usage:")
+        usage = TextFormatter.format("#{@cmd.name} #{args}#{flags}", "Usage:")
         usage << "\n"
-        usage <<  TextFormatter.wrap_for_term(@cmd.usage[:short].join(" "), "      ")
+        usage <<  TextFormatter.format(@cmd.usage[:short].join(" "), "      ")
         usage << "\n"
       end
 
       def long_usage_text
         args = @cmd.definition.arguments.map {|a| a.name }.join " "
         flags = " [options...]"
-        usage = TextFormatter.wrap_for_term("#{@cmd.name} #{args}#{flags}", "Usage:")
+        usage = TextFormatter.format("#{@cmd.name} #{args}#{flags}", "Usage:")
         usage << "\n"
-        usage <<  TextFormatter.wrap_for_term(@cmd.usage[:full].join(" "), "      ")
+        usage <<  TextFormatter.format(@cmd.usage[:full].join(" "), "      ")
         usage << "\n"
       end
 
@@ -89,9 +60,9 @@ module CLIBuddy
           flags = " [options...]"
         end
 
-        usage = TextFormatter.wrap_for_term("#{@cmd.name} #{args}#{flags}", "Usage:")
+        usage = TextFormatter.format("#{@cmd.name} #{args}#{flags}", "Usage:")
         usage << "\n"
-        usage <<  TextFormatter.wrap_for_term(@cmd.usage[desc_type].join(" "), "      ")
+        usage <<  TextFormatter.format(@cmd.usage[desc_type].join(" "), "      ")
         usage << "\n"
       end
 

@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     clibuddy (0.1.0)
+      pastel
       tty-screen
       tty-spinner
       tty-table
