@@ -8,10 +8,11 @@ module CLIBuddy
   FlowEntry = Struct.new(:expression, :actions)
   Command = Struct.new(:name, :flow, :definition, :usage)
   Message = Struct.new(:id, :lines)
-  CommandDefinition = Struct.new(:arguments)
-  CommandDefinitionArg = Struct.new(:name, :param, :description)
-  class Builder
+  CommandDefinition = Struct.new(:arguments, :flags)
+  CommandArg = Struct.new(:name, :description)
+  CommandFlag = Struct.new(:flag, :arg, :short, :description)
 
+  class Builder
     TIMESPEC_MATCH = /^((\d*[.]{0,1}\d++(?!%))(s)|(\d*)(ms))$/
     attr_reader :commands, :messages
     def run(descriptor_file)
@@ -104,37 +105,60 @@ module CLIBuddy
       command
     end
 
+    ## --A-Z*
     def parse_command_definition(p)
       if p.empty?
         parse_error! p.parent, "Expected arguments or flags indented below #{p.parent.current_token}"
       end
       cmd_def = CommandDefinition.new([])
       cmd_def.arguments = []
+      cmd_def.flags = []
       while p.advance_line != :EOF
-        arg_name = p.advance_token
-        param = nil
-        # TODO - this validation is full of holes... and sometimes lies to the user.
-        if p.peek_token == :EOL
-          if /[A-Z0-9_-]/ !~ arg_name && /^--[a-z0-9*]+/ !~ arg_name && /^-[a-z0-9]$/ !~ arg_name
-            parse_error! p, "Argument name must be capital letters and/or numbers and\n"\
-              "may include hyphens or underscores. You provided: #{arg_name}"
+        name = p.advance_token # Should be EOL for args, and may be a param for flags
+        case name
+        when /^--([a-zA-Z0-9*_-]*)/
+          cmd_def.flags << extract_flag(p, $1)
+        when /[^_-][A-Z0-9_-]/
+          if p.peek_token != :EOL
+            parse_error! p, "#{name} is an argument, but only flags can take an additional arguments."
           end
+          description = parse_command_definition_description(p.parser_from_children)
+          cmd_def.arguments << CommandArg.new(name, description)
         else
-          case arg_name
-            # TODO revisit this regex
-          when /^--[a-z0-9*]+/ # TODO - add a lookback, this will allow multiple *
-            param = p.advance_token
-            # when /^-[a-z0-9]/ # Allow short-flags. Could combine it to one regex above.
-            #   param = p.advance_token
-          else
-            parse_error! p, "#{arg_name} is a parameter and not a flag. Only flags can take additional arguments. "
-          end
+          parse_error! p, "#{name} must be an argument in the form ALL-CAPS-NAME or a flag in the the form --lowercase-flag-name"
         end
-        param = nil if param == :EOL
-        descriptions = parse_command_definition_description(p.parser_from_children)
-        cmd_def.arguments << CommandDefinitionArg.new(arg_name, param, descriptions)
       end
       cmd_def
+    end
+
+    # Had a regex with lookahead to do this, but it was getting cumbersome, and this is more readable..
+    def extract_flag(p, flag)
+      breakdown = flag.split("*")
+      if flag.match(/^---.*/)
+        parse_error! p, "Flags must be prefixed with two hyphens (-); #{flag} has more than that."
+      end
+
+      if breakdown.length > 2
+        parse_error! p, "The flag #{flag} can have only one *.  * is used to indicate the short flag name."
+      end
+      prefix, suffix = breakdown
+      if suffix
+        if suffix.length == 0
+          parse_error! p, "The flag #{flag} has a short-name indicator (*) at the end of the flag.  This special character should be placed before the letter you wish to use as the short name for the flag."
+        end
+        short = suffix.slice(0)
+        suffix = suffix.slice(1..-1)
+        flag = "#{prefix}#{short}#{suffix}"
+      else
+        short = nil
+      end
+      # TODO validate all caps, plus optional surrounding matched [ ] around arg
+      flag_arg = p.advance_token == :EOL ? nil : p.current_token
+      if (p.peek_token != :EOL)
+        parse_error! p, "#{flag} can take at most one argument, but more than one is provided."
+      end
+      description = parse_command_definition_description(p.parser_from_children)
+      flag = CommandFlag.new(flag, flag_arg, short, description)
     end
 
     def parse_command_definition_description(p)
