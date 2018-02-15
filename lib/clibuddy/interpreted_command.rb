@@ -1,4 +1,5 @@
 require 'forwardable'
+require 'optparse'
 
 module CLIBuddy
   class InterpretedCommand
@@ -13,18 +14,16 @@ module CLIBuddy
     def initialize(cmd, provided_args)
       @cmd = cmd
       @provided_args = provided_args
+      validate_args
     end
 
     # Returns a mapping from required arg name to provided arg. Values will be nil if a required arg is not provided.
     def mapped_args
-      a = {}
-      # TODO this does not account for optional args which take an argument (EG, `--file /path`)
-      # TODO parse the provided args against the command definition
-      provided_required_args = @provided_args.reject { |a| a.start_with?("--") }
+      mapped_args = {}
       cmd.definition.arguments.each_with_index do |arg, i|
-        a[arg.name] = provided_required_args[i]
+        mapped_args[arg.name] = @leftover_args[i]
       end
-      a
+      mapped_args
     end
 
     # Return any flow that matches the provided args or nil if none match
@@ -32,5 +31,40 @@ module CLIBuddy
       cmd.flow.find { |f| f.expression == provided_args.join(" ") }
     end
 
+    private
+
+    # All we care about doing is parsing the provided args against the command definition. If there are any
+    # missing required args we should output some kind of standard 'arguments missing' error to the user.
+    # The same is true of any other option parsing errors, like not suppling an arg to an option that requires
+    # one. If there are no validation errors this has properly mapped provided args to options so they can be
+    # easily returned from #mapped_args later
+    def validate_args
+      opt_parser = OptionParser.new do |opts|
+        cmd.definition.flags.each do |flag|
+          parser_args = []
+          l = "--#{flag.flag}"
+          if flag.arg
+            if flag.arg =~ /^\[(.+)+\]$/
+              # if the arg is optional (surrounded by []) then the long form must look like `--key[=VALUE]` while
+              # the short form must look like `-k[VALUE]`
+              l += "[=#{$1}]"
+            else
+              l += " #{flag.arg.upcase}" unless flag.arg.nil?
+            end
+          end
+          parser_args << l
+          if flag.short
+            s = "-#{flag.short}"
+            s += "#{flag.arg.upcase}" unless flag.arg.nil?
+            parser_args << s
+          end
+          opts.on(*parser_args)
+        end
+      end
+      # parse! destructively removes args and we want to see what non-option args were passed to use in
+      # mapped_args later
+      @leftover_args = provided_args.dup
+      opt_parser.parse!(@leftover_args)
+    end
   end
 end
