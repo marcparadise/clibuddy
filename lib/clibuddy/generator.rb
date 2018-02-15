@@ -28,6 +28,8 @@ module CLIBuddy
     def command_content(command_name)
       <<EOF
 #!/usr/bin/env ruby
+require "rubygems"
+$:.unshift(File.join(File.dirname(__FILE__), "..", "lib"))
 
 require "clibuddy/main"
 
