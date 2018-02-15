@@ -20,6 +20,7 @@ module CLIBuddy
           super("CLIRUN001", msg)
         end
       end
+
       class NoSuchCommand < EngineRuntimeError
         attr_reader :cmd_name
         def initialize(cmd_name)
@@ -31,6 +32,3 @@ module CLIBuddy
     end
   end
 end
-
-
-
