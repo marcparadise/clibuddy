@@ -1,6 +1,6 @@
 require "clibuddy/builder"
 require "fileutils"
-
+require "clibuddy/runner/errors"
 module CLIBuddy
   class Generator
     def initialize(builder, command_name)
@@ -8,12 +8,10 @@ module CLIBuddy
       @command_name = command_name
     end
 
-
     def generate
       cmd = @builder.lookup_command(@command_name)
       if !cmd
-        # TODO raise to handler
-        puts "The command '#{@command_name}' does not exist"
+        raise Runner::Errors::NoSuchCommand.new(@command_name)
         exit 1
       end
       content = command_content(@command_name)

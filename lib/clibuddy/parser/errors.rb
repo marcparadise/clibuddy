@@ -4,40 +4,51 @@ module CLIBuddy
       module Errors
         class SourceError < Exception
           attr_reader :message, :id
+
           def initialize(id, source_line, message)
             @message = message
             @source_line = source_line
             @id = id
           end
 
-          def line_number
+          def line_no
             @source_line.number
           end
 
-          def active_token
+          def token
             @source_line.current_token
-          end
-
-          def to_s
-            "Error: #{name}\nLine #{line_number}, near #{active_token}:\n\n #{message}"
           end
         end
 
         class NoChildrenError < SourceError
           def initialize(source_line)
-            super("CLISE001", source_line, message)
+            super("CLIPARSE001", source_line, message)
           end
         end
 
         class NotCompleteError < SourceError
           def initialize(source_line)
-            super("CLISE002", source_line, "Expected end-of-line here, instead I see '#{source_line.peek}'")
+            super("CLIPARSE002", source_line, "Expected end-of-line here, instead I see '#{source_line.peek}'")
           end
         end
 
         class NoNextTokenError < SourceError
           def initialize(source_line)
-            super("CLISE003", source_line, "Unexpected end of line.")
+            super("CLIPARSE003", source_line, "Unexpected end of line.")
+          end
+        end
+        class ParseError < SourceError
+          def initialize(line_no, token, message)
+            @line_no = line_no
+            @token = token
+            super("CLIPARSE999", nil, message)
+          end
+          def line_no
+            @line_no
+          end
+
+          def token
+            @token
           end
         end
       end
