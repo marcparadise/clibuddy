@@ -18,9 +18,17 @@ module CLIBuddy
           line.gsub!(name, pastel.green(provided))
         end
         line.gsub!(NEWLINE_ESCAPE, "\n")
-        if line.start_with?(".red")
-          line = line.gsub(/^\.red\s+/, "")
-          line = pastel.red(line)
+        # This works for simple inline coloring (and later formatting)
+        # but wont' work for nested format tags.
+        while line =~ /(.*)\.(red|green|blue|yellow|magenta|cyan|white)(.*)(\.x|$)(.*)$/
+
+          # $1 - text prefix
+          # $2 - color identifier
+          # $3 - text to be colored
+          # $4 - end marker or nil
+          # $5 - remaining uncolored text or nil
+          colored_text = pastel.send($2.to_sym, $3)
+          line = "#{$1}#{colored_text}#{$5}"
         end
         line
       end
