@@ -28,11 +28,11 @@ module CLIBuddy
     end
 
     def parse_error!(parser, message)
-      puts "Parse Error"
-      puts "  Line: #{parser.lineno}"
-      puts "  Error: #{message}"
-      puts " Lib Source: #{caller(1, 1)}"
-      exit 1
+      # TODO specific exceptions or at least error numbers
+      # TODO - clean up exceptions to differentiate between parse errors and build errors
+      # # TODO just include parser in the exceptin instead of
+      # splitting out line/token info?
+      raise Prototype::Parser::Errors::ParseError.new(parser.lineno, parser.current_token, message)
     end
 
     def parse(p)
@@ -311,7 +311,7 @@ module CLIBuddy
         when ".show-usage"
           t = p.advance_token
           if t != :EOL
-            raise "Line #{lineno}: unexpected text '#{t}' after .show-usage"
+            parse_error! p, "Unexpected etext #{t} after '.show-usage'"
           end
         else
           parse_error! p, "Unknown directive #{action.directive}"

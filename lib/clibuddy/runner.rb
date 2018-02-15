@@ -4,6 +4,7 @@ require "tty-table"
 require "clibuddy/formatters/output_formatter"
 require "clibuddy/formatters/command_usage_formatter"
 require "clibuddy/interpreted_command"
+require "clibuddy/runner/errors"
 
 module CLIBuddy
   class Runner
@@ -123,7 +124,7 @@ module CLIBuddy
       puts format(lookup_message(action.args))
     end
 
-    def do_show_usage(action)
+    def do_show_usage(_action)
       usage = Formatters::CommandUsageFormatter.new(@cmd)
       puts usage.long_usage_text
       args = TTY::Table.new(usage.arguments)
@@ -156,7 +157,7 @@ module CLIBuddy
       if cmd.nil?
         # TODO how do we differentiate between runtime errors and flow "errors" that are supposed to happen
         # A: we can do differently-formatted exception handling that makes it clear.
-        raise "No command matches '#{name}'"
+        raise Errors::NoSuchCommand.new(name)
       end
       InterpretedCommand.new(cmd, provided_args)
     end
@@ -164,7 +165,12 @@ module CLIBuddy
     def lookup_flow
       flow = cmd.flow
       if flow.nil?
-        raise "No flow defined for command [#{cmd.name}] args [#{cmd.provided_args.join(" ")}]"
+        if cmd.provided_args.join(" ") == ""
+          do_show_usage(nil)
+          exit 1
+        else
+          raise Errors::NoMatchingFlow.new(cmd.name, cmd.provided_args)
+        end
       end
       flow
     end
