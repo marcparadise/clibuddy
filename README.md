@@ -33,54 +33,65 @@ Image and then making that buddy really easy to use with a shortcut (alias).
 
 ```shell
 # Clone the repository
-$ git clone https://github.com/marcparadise/clibuddy.git
+git clone https://github.com/marcparadise/clibuddy.git
 # Move into the project directory
-$ cd clibuddy
+cd clibuddy
 # Build the current version docker image
-$ docker build -t clibuddy .
+docker build -t clibuddy .
 # Setup a shortcut, so that whenever you type 'clibuddy' you run the code
-# inside of the Docker image. This will last in only this terminal session
-# unit you close it.
-alias clibuddy="docker run -it --rm -v $(pwd):/share clibuddy:latest"
+# inside of the Docker image. This will work for this one terminal.
+function clibuddy {
+  docker run -it --rm -v $(pwd):/share clibuddy:latest $@
+}
 # Now move to a directory where you have defined a clibuddy 'sample.txt' file
-$ cd ~/Downloads
+cd ~/Downloads
 # Run your CLI command with clibuddy - I have a cli command called 'dentist'
-$ clibuddy dentist
+clibuddy dentist
 ```
 
 When it is time to upgrade your CLIBuddy you will need to return to the
 directory that contains the repository and update the code. Then rebuild
-your docker image. The existing alias will still work for you.
+your docker image.
 
 ```shell
-$ cd ~/clibuddy
-$ git pull origin master
-$ docker build -t clibuddy .
+cd ~/clibuddy
+git pull origin master
+docker build -t clibuddy .
+# If the 'clibuddy' function is not defined you will redefine it.
+function clibuddy {
+  docker run -it --rm -v $(pwd):/share clibuddy:latest $@
+}
 ```
 
 You might be saying: Hey wait! I want to take screenshots or recordings of the
-command that I built and I don't want 'clibuddy' to be the first word of every
+command that I built and I don't want `clibuddy` to be the first word of every
 command. I want it to be the name of the command I defined in my BuddyScript file.
 
-That's a great idea and all it requires is that you change the alias to your command
-and add that command to the end of command you are assigning to that alias. So
-if I wanted to be able to say `dentist vikki brush`, I would need to create an
-alias like this:
+That's a great idea and all it requires is that you define a function that
+is the same name as the command you want to run and then insert that same
+command between `clibuddy:latest` and `$@`. So if I defined a command in my
+BuddyScript named `dentist` and I wanted my commands in my shell to appear as
+ `dentist vikki brush`, then I would need to create a function that looked like:
 
 ```shell
-$ alias dentist="docker run -it --rm -v $(pwd):/share clibuddy:latest dentist"
+function dentist {
+  docker run -it --rm -v $(pwd):/share clibuddy:latest dentist $@
+}
 ```
 
 You might love your CLIBuddy so much that you want to have access to it all the
 time. I respect that! We all want to keep our buddies close. Then I would
-encourage you to append the alias to the script that runs whenever you start a
-new terminal.
+encourage you to append the function to the script that runs whenever you
+start a new terminal session. This is likely your `.bash_profile`. This command
+will append this function to the end of that file:
 
 ```shell
-$ echo 'alias dentist="docker run -it --rm -v $(pwd):/share clibuddy:latest dentist"' >> .bashrc
+$ echo 'function dentist {
+  docker run -it --rm -v $(pwd):/share clibuddy:latest dentist $@
+}' >> ~/.bash_profile
 ```
 
-Now every time you open a new terminal you will be able to run the command.
+Now every time you open a new terminal you will be able to use your command.
 
 ## License
 
