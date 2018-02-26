@@ -9,7 +9,7 @@ require "optparse"
 module CLIBuddy
   class Main
     def run(argv)
-      @descriptor_file = "sample.txt"
+      @descriptor_file = "sample.bdy"
       # TODO actual good handling for args, defintion file, etc.
       @opt_parser = OptionParser.new do |opts|
         opts.banner = <<-BANNER

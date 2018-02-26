@@ -17,8 +17,8 @@ $ git clone https://github.com/marcparadise/clibuddy.git
 $ cd ~/clibuddy
 # Install the dependencies
 $ bundle install
-# Now copy a BuddyScript file, `sample.txt`, into the directory file
-$ cp ~/Downloads/sample.txt .
+# Now copy a BuddyScript file, `sample.bdy`, into the directory file
+$ cp ~/Downloads/sample.bdy .
 # Run your CLI command with clibuddy - I have a cli command called 'dentist'
 $ bundle exec bin/clibuddy run dentist
 ```
@@ -43,7 +43,7 @@ docker build -t clibuddy .
 function clibuddy {
   docker run -it --rm -v $(pwd):/share clibuddy:latest $@
 }
-# Now move to a directory where you have defined a clibuddy 'sample.txt' file
+# Now move to a directory where you have defined a clibuddy 'sample.bdy' file
 cd ~/Downloads
 # Run your CLI command with clibuddy - I have a cli command called 'dentist'
 clibuddy dentist
