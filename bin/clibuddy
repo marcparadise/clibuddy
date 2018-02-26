@@ -2,4 +2,4 @@
 
 require "clibuddy/main"
 
-CLIBuddy::Main.new().run(ARGV.shift, ARGV.shift, ARGV)
+CLIBuddy::Main.new().run(ARGV)
