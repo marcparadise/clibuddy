@@ -19,6 +19,9 @@ module CLIBuddy
       end
 
       def self.load(filename)
+        unless File.exist?(filename)
+          raise DescriptorFileNotFound.new(filename)
+        end
         listing = Parser::SourceListing.new([])
         line_no = 0
         File.readlines(filename).map do |line|

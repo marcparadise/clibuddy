@@ -29,6 +29,13 @@ module CLIBuddy
           super("CLIRUN002", msg)
         end
       end
+
+      class DescriptorFileNotFound < EngineRuntimeError
+        def initialize(path)
+          msg = "I could not find a file at path '#{path}'"
+          super("CLIRUN003", msg)
+        end
+      end
     end
   end
 end

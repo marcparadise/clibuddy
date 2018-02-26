@@ -4,41 +4,57 @@ require "clibuddy/generator"
 require "clibuddy/parser/errors"
 require "clibuddy/runner/errors"
 require "tty/table"
-
+require "optparse"
 
 module CLIBuddy
   class Main
-    def run(action, cmd_name, args)
+    def run(argv)
       @descriptor_file = "sample.txt"
       # TODO actual good handling for args, defintion file, etc.
+      @opt_parser = OptionParser.new do |opts|
+        opts.banner = <<-BANNER
+Usage: clibuddy [options] run COMMAND ARGUMENTS...
+       clibuddy [options] generate COMMAND
+
+Options:
+BANNER
+        opts.on("-f PATH", "--file PATH", "Buddy file with command description") do |v|
+          @descriptor_file = v
+        end
+      end
+
+      i = argv.find_index {|a| a == "run" || a == "generate"}
+      if i.nil?
+        puts "Must use action 'run' or 'generate'"
+        puts @opt_parser.banner
+        exit 1
+      end
+      buddy_args = argv.slice(0, i)
+      action = argv[i]
+      cmd_name = argv[i+1]
+      cmd_args = argv[i+2..-1]
+
+      @opt_parser.parse!(buddy_args)
+
       b = CLIBuddy::Builder.new()
-      b.load("sample.txt")
-      @exit_code = 1
+      b.load(@descriptor_file)
       case action
       when "generate"
         generator = CLIBuddy::Generator.new(b, cmd_name)
         generator.generate
-
       when "run"
-        runner = CLIBuddy::Runner.new(b, cmd_name, args)
+        runner = CLIBuddy::Runner.new(b, cmd_name, cmd_args)
         runner.run
-
       else
-        puts "Unrecognized action: #{action}"
-        puts ""
-        puts "Usage: clibuddy run COMMAND ARGUMENTS..."
-        puts "       clibuddy generate COMMAND"
-        exit 1
-      end
-      @exit_code = 0
 
+      end
+      exit 0
     rescue Prototype::Parser::Errors::SourceError => e
       puts source_parse_error(e)
     rescue Runner::Errors::EngineRuntimeError => e
       puts cli_buddy_error(e)
-    ensure
-      exit @exit_code
     end
+
     def source_parse_error(e)
       p = Pastel.new
       t = TTY::Table.new()
