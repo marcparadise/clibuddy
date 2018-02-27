@@ -12,7 +12,7 @@ module CLIBuddy
             raise "[SL D: #{depth}] NOOO! BOF is not a valid source"
           end
           if sources == :EOF
-            raise "[SL D: #{depth}] NOOO! EOF is not a valid source"
+            raise "[SL D: #{depth}] Received an empty sub-tree for new source listing (:EOF)"
           end
           @sources = sources
           @current_line = nil
