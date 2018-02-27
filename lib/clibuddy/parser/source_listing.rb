@@ -6,13 +6,16 @@ module CLIBuddy
     module Parser
       class SourceListing
         attr_reader :current_line, :parent, :depth
-        def initialize(sources = [], depth = 0)
+        def initialize(sources = [], depth = 0, parent = nil)
+          @parent = parent
           @depth = depth
+          parent_info = "Parent current line# #{parent.current_line}" if parent
+          # TODO not sure if this is possoible or meaningful now:
           if sources == :BOF
-            raise "[SL D: #{depth}] NOOO! BOF is not a valid source"
+            raise "[SL D: #{depth}] Received unexpected BOF in child tree. #{parent_info}"
           end
           if sources == :EOF
-            raise "[SL D: #{depth}] Received an empty sub-tree for new source listing (:EOF)"
+            raise "[SL D: #{depth}] Received an empty tree for new source listing (:EOF). #{parent_info}"
           end
           @sources = sources
           @current_line = nil

@@ -37,7 +37,7 @@ module CLIBuddy
 
       def parser_from_children
         children = @listing.prune_children()
-        listing = Parser::SourceListing.new(children, depth + 2)
+        listing = Parser::SourceListing.new(children, depth + 2, @listing)
         CrappyParser.new(listing, self)
       end
 
