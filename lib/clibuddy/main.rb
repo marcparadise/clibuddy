@@ -44,7 +44,7 @@ BANNER
       b.load(@descriptor_file)
       case action
       when "generate"
-        generator = CLIBuddy::Generator.new(b, cmd_name)
+        generator = CLIBuddy::Generator.new(b, cmd_name, @descriptor_file)
         generator.generate
       when "run"
         runner = CLIBuddy::Runner.new(b, cmd_name, cmd_args)

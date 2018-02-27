@@ -3,8 +3,9 @@ require "fileutils"
 require "clibuddy/runner/errors"
 module CLIBuddy
   class Generator
-    def initialize(builder, command_name)
+    def initialize(builder, command_name, buddy_file)
       @builder = builder
+      @buddy_file = buddy_file
       @command_name = command_name
     end
 
@@ -33,6 +34,8 @@ require "clibuddy/main"
 
 ARGV.unshift "#{command_name}" # COmmand to run flows for
 ARGV.unshift "run" # Action to take - run the command flow
+ARGV.unshift "#{@buddy_file}"
+ARGV.unshift "-f"
 CLIBuddy::Main.new().run(ARGV)
 EOF
     end
