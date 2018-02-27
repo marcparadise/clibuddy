@@ -67,11 +67,21 @@ module CLIBuddy
 
       commands = []
       while p.advance_line != :EOF
+        # Multiple command names are possible on one line ; each one
+        # should have the same flow based on what follows.
         cmd_names = p.advance_token.split(",")
         cmd_names.map! {|c| c.strip}
+        cmd_name = cmd_names.shift
 
+        # Load the command elements.
+        command_block = parse_command_block(cmd_name, p.parser_from_children)
+        commands << command_block
+        # For any aliases/additional names defined, assign them the smae block,
+        # change the name, and add to the list.
         cmd_names.each do |cmd_name|
-          commands << parse_command_block(cmd_name, p.parser_from_children)
+          cmd = command_block.dup
+          cmd.name = cmd_name
+          commands << cmd
         end
       end
       commands
