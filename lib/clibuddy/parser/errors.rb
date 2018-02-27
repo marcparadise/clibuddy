@@ -37,6 +37,7 @@ module CLIBuddy
             super("CLIPARSE003", source_line, "Unexpected end of line.")
           end
         end
+
         class ParseError < SourceError
           def initialize(line_no, token, message)
             @line_no = line_no
@@ -55,6 +56,3 @@ module CLIBuddy
     end
   end
 end
-
-
-

@@ -2,7 +2,6 @@ require "clibuddy/parser/errors"
 require "clibuddy/parser/source_listing"
 require "clibuddy/parser/source"
 
-
 module CLIBuddy
   module Prototype
     class CrappyParser
@@ -19,9 +18,6 @@ module CLIBuddy
       end
 
       def self.load(filename)
-        unless File.exist?(filename)
-          raise DescriptorFileNotFound.new(filename)
-        end
         listing = Parser::SourceListing.new([])
         line_no = 0
         File.readlines(filename).map do |line|
