@@ -69,7 +69,7 @@ module CLIBuddy
       while p.advance_line != :EOF
         # Multiple command names are possible on one line ; each one
         # should have the same flow based on what follows.
-        cmd_names = p.advance_token.split(",")
+        cmd_names = p.consume_to_eol.split(",")
         cmd_names.map! {|c| c.strip}
         cmd_name = cmd_names.shift
 
