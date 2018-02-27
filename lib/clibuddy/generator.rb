@@ -31,10 +31,9 @@ $:.unshift(File.join(File.dirname(__FILE__), "..", "lib"))
 
 require "clibuddy/main"
 
-action = "run"
-command = "#{command_name}"
-
-CLIBuddy::Main.new().run(action, command, ARGV)
+ARGV.unshift "#{command_name}" # COmmand to run flows for
+ARGV.unshift "run" # Action to take - run the command flow
+CLIBuddy::Main.new().run(ARGV)
 EOF
     end
   end
