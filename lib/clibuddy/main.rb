@@ -36,6 +36,10 @@ BANNER
 
       @opt_parser.parse!(buddy_args)
 
+      unless File.exist?(@descriptor_file)
+        raise Runner::Errors::DescriptorFileNotFound.new(@descriptor_file)
+      end
+
       b = CLIBuddy::Builder.new()
       b.load(@descriptor_file)
       case action

@@ -67,8 +67,12 @@ module CLIBuddy
 
       commands = []
       while p.advance_line != :EOF
-        cmd_name = p.advance_token
-        commands << parse_command_block(cmd_name, p.parser_from_children)
+        cmd_names = p.advance_token.split(",")
+        cmd_names.map! {|c| c.strip}
+
+        cmd_names.each do |cmd_name|
+          commands << parse_command_block(cmd_name, p.parser_from_children)
+        end
       end
       commands
     end
