@@ -4,6 +4,8 @@ require "clibuddy/parser"
 module CLIBuddy
   # TODO extend notation to include default value for param like
   # --use-secure USE_SECURE=true?
+  #
+  # TODO - this is due for a refactor - not every attribute is used by every element.
   FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent, :ui)
 
   FlowEntry = Struct.new(:expression, :actions)
@@ -241,6 +243,20 @@ module CLIBuddy
     end
 
 
+    # This will populate the action.delay
+    # if the 'after TIMESPEC" sequence of tokens is in the
+    # current line; and it will assign everfyting after the timespec to
+    # action.msg
+    # In absence of timespec, it will assign remaining line to action.msg
+    def maybe_parse_timespec_msg_for_action(p, action)
+      if p.peek_token == "after"
+        parse_timespec_msg_for_action(p, action)
+      else
+        # Does not check for EOL if message is required.
+        action.msg = p.consume_to_eol
+      end
+    end
+
     # Doesn't catch everything correctly (eg 1..2 works) but good enough for now
     def parse_timespec_msg_for_action(p, action)
 
@@ -287,6 +303,10 @@ module CLIBuddy
         when ".spinner"
           action.msg = p.consume_to_eol
           action.children = parse_flow_actions(p.parser_from_children, action)
+          # TODO - let's clean up nested directives a bit so that "after TIMESPEC" can
+          # exist in any directive regardless of parentage or type.  The only difference
+          # is that some specific elements will require timespec.
+          #
         when /^[.](show-text|success|failure)$/
           # TODO - each of these ^ is its own action which accepts a time param.
           # TODO - checking for which ones are allowed to be children
@@ -297,7 +317,7 @@ module CLIBuddy
             # it regardless.
             parse_timespec_msg_for_action(p, action)
           else
-            action.msg = p.consume_to_eol
+            maybe_parse_timespec_msg_for_action(p, action)
             if action.msg == :EOL
               parse_error! p, "Expected message to follow #{action.directive} and got nothing!"
             end
