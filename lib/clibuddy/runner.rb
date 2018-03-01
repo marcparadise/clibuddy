@@ -126,7 +126,7 @@ module CLIBuddy
       p = Pastel.new
       rows = []
       action.args.each do |line|
-        rows << line.split("|")
+        rows << line.split("|").map { |v| format(v) }
       end
       # Builder has stored the header as the first row.
       header = rows.shift

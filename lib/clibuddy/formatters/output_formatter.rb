@@ -5,6 +5,7 @@ module CLIBuddy
     class OutputFormatter
       TAB_ESCAPE = /\.t /
       NEWLINE_ESCAPE = /\.n$/
+      ENV_MARKER = /(.*)\.e\s(\w+)(.*)/
 
       def self.format(msg, mapped_args)
         Array(msg).collect do |line|
@@ -32,6 +33,14 @@ module CLIBuddy
           colored_text = pastel.send($2.to_sym, $3)
           line = "#{$1}#{colored_text}#{$5}"
         end
+        while line =~ ENV_MARKER
+          # $1 - text prefix
+          # $2 - env var name
+          # $3 - trailing text
+          val = ENV[$2] || pastel.red("env var not found: #{$2}")
+          line = "#{$1}#{val}#{$3}"
+        end
+
         line
       end
     end
