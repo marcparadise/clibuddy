@@ -3,6 +3,7 @@ require 'pastel'
 module CLIBuddy
   module Formatters
     class OutputFormatter
+      TAB_ESCAPE = /\.t /
       NEWLINE_ESCAPE = /\.n$/
 
       def self.format(msg, mapped_args)
@@ -18,6 +19,7 @@ module CLIBuddy
           line.gsub!(name, pastel.green(provided))
         end
         line.gsub!(NEWLINE_ESCAPE, "\n")
+        line.gsub!(TAB_ESCAPE, "\t")
         # This works for simple inline coloring (and later formatting)
         # but wont' work for nested format tags.
         while line =~ /(.*)\.(red|green|blue|yellow|magenta|cyan|white)(.*)(\.x|$)(.*)$/
