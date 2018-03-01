@@ -2,6 +2,7 @@
 require "tty-spinner"
 require "tty-screen"
 require "tty-table"
+require "pastel"
 require "clibuddy/formatters/output_formatter"
 require "clibuddy/formatters/command_usage_formatter"
 require "clibuddy/interpreted_command"
@@ -122,16 +123,25 @@ module CLIBuddy
     end
 
     def do_table(action)
+      p = Pastel.new
       rows = []
       action.args.each do |line|
         rows << line.split("|")
       end
       # Builder has stored the header as the first row.
       header = rows.shift
-      header = nil if header.empty?
-      action.ui = ::TTY::Table::new(header, rows)
+      if header.empty?
+        header = nil
+      else
+        header.map! { |val| p.decorate(val, :magenta, :underline) }
+      end
+
+      action.ui = ::TTY::Table::new header: header, rows: rows
       # Limit to 80 column width because the table will
-      # expand to fill to maximum available width.
+      # expand to fill to maximum available width, and do a weird
+      # centering thing - looks crappy.  This is here until
+      # we can teach tty::table about making itself only big enough
+      # to contain its text
       width = [TTY::Screen.width, 80].min
       puts action.ui.render(:unicode, multiline: true, resize: true,
                                       width: width)
