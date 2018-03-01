@@ -325,8 +325,25 @@ module CLIBuddy
         when ".show-usage"
           t = p.advance_token
           if t != :EOL
-            parse_error! p, "Unexpected etext #{t} after '.show-usage'"
+            parse_error! p, "Unexpected text #{t} after '.show-usage'"
           end
+        when ".table"
+          action.args = []
+          # TODO - we can make this better, such as properly handling the | separator,
+          # validating column counts match, formatting directives, etc.
+          h = p.peek_token
+          header = if h == :EOL  # A header is not given
+                    ""
+                    else
+                      p.consume_to_eol # A |-delimited list of fields.
+                    end
+          content = parse_text_block(p.parser_from_children)
+          # runner requires first row being a header. it will handle blank correctly.
+          # messy putting them in the same place, but slightly less offensive than
+          # repurposing the msg field, or adding a field that's only used by one directive...
+          # TODO - directive-specific action classes where it makes sense!
+          content.unshift header
+          action.args = content
         else
           parse_error! p, "Unknown directive #{action.directive}"
         end
