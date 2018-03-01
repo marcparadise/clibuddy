@@ -191,7 +191,28 @@ module CLIBuddy
         raise Errors::NoSuchCommand.new(name)
       end
       begin
-        InterpretedCommand.new(cmd, provided_args)
+        cmd = InterpretedCommand.new(cmd, provided_args)
+        # Special case - if the flow contains the special directive '.use'
+        # it will pull in the version of the flow that matches .use params.
+        # This lets us quickly set up multiple command patterns that do the same thing
+        # with copying and pasting full definitions
+        #
+        # Right now it won't behave if you do things before or after use;
+        # a slight refactor will make it possible to pull in other command
+        # usage behaviors anywhere in a flow.
+        if cmd.flow != nil
+          if cmd.flow.actions != nil && !cmd.flow.actions.empty?
+            first_action = cmd.flow.actions[0]
+            if first_action.directive == ":use"
+              # Create this command just as if first_action.args were the
+              # provided arguments.
+              # TODO - handle not found differently in this case,
+              # because it'll get confusing if we don't.
+              cmd = InterpretedCommand.new(cmd,first_action.args)
+            end
+          end
+        end
+        cmd
       rescue OptionParser::ParseError => e
         puts "Could not parse the arguments provided to '#{cmd.name}': #{e.message}"
         exit 1
