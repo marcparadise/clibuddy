@@ -1,5 +1,6 @@
 # TODO - ui elements to split out.
 require "tty-spinner"
+require "tty-screen"
 require "tty-table"
 require "clibuddy/formatters/output_formatter"
 require "clibuddy/formatters/command_usage_formatter"
@@ -102,7 +103,7 @@ module CLIBuddy
       else
         # TODO - it'll make sense to create aa corresponding UI element so that we can just
         # blindly ui.update...
-        action.ui = ::TTY::Spinner::new(":spinner #{format(action.msg)}", format: :spin)
+        action.ui = ::TTY::Spinner.new(":spinner #{format(action.msg)}", format: :spin)
         action.ui.error
       end
     end
@@ -115,9 +116,29 @@ module CLIBuddy
         action.parent.ui.success
       else
         # Unspun spinners double as simple success/failure indicators
-        action.ui = ::TTY::Spinner::new(":spinner #{format(action.msg)}", format: :spin)
+        action.ui = ::TTY::Spinner.new(":spinner #{format(action.msg)}", format: :spin)
         action.ui.success
       end
+    end
+
+    def do_table(action)
+      rows = []
+      action.args.each do |line|
+        rows << line.split("|")
+      end
+      # Builder has stored the header as the first row.
+      header = rows.shift
+      header = nil if header.empty?
+      action.ui = ::TTY::Table::new(header, rows)
+      # Limit to 80 column width because the table will
+      # expand to fill to maximum available width.
+      width = [TTY::Screen.width, 80].min
+      puts action.ui.render(:unicode, multiline: true, resize: true,
+                                      width: width)
+      # TODO better handling in .table directive will let the user
+      # control these types of things.
+                       #alignments: [:right, :left],
+                       #column_widths: [0, 40])
     end
 
     def do_show_error(action)
