@@ -300,6 +300,15 @@ module CLIBuddy
         action.parent = parent_action
         action.directive = p.advance_token
         case p.current_token
+        when ".use"
+          # Special case.  Also note this must be top level after 'for' so
+          # we will probably want to do something about that.
+          remaining = p.consume_to_eol
+          if remaining == :EOL
+            parse_error! p, "Expected matching argument list after 'for'"
+          end
+          action.args = remaining
+
         when ".spinner"
           action.msg = p.consume_to_eol
           action.children = parse_flow_actions(p.parser_from_children, action)
