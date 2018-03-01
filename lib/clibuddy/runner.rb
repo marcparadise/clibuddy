@@ -203,7 +203,7 @@ module CLIBuddy
         if cmd.flow != nil
           if cmd.flow.actions != nil && !cmd.flow.actions.empty?
             first_action = cmd.flow.actions[0]
-            if first_action.directive == ":use"
+            if first_action.directive == ".use"
               # Create this command just as if first_action.args were the
               # provided arguments.
               # TODO - handle not found differently in this case,
