@@ -307,8 +307,20 @@ module CLIBuddy
           if remaining == :EOL
             parse_error! p, "Expected matching argument list after 'for'"
           end
-          action.args = remaining
+          action.args = remaining.split(/\s/)
 
+        when ".countdown"
+          dur = p.advance_token
+          if dur.to_i < 1
+            parse_error! p, "Expected number of seconds for countdown, got #{action.args}"
+          else
+            action.args = dur.to_i
+            remaining = p.consume_to_eol
+            if remaining == :EOL
+              parse_error! p, "Expected countdown message after '#{dur}', got #{remaining}"
+            end
+            action.msg = remaining
+          end
         when ".spinner"
           action.msg = p.consume_to_eol
           action.children = parse_flow_actions(p.parser_from_children, action)

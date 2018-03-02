@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.add_dependency("tty-spinner")
   spec.add_dependency("tty-screen")
+  spec.add_dependency("tty-cursor")
   spec.add_dependency("tty-table")
   spec.add_dependency("pastel")
 
