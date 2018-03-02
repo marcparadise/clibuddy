@@ -201,10 +201,12 @@ module CLIBuddy
 
       puts "Arguments:"
       puts args.render(:basic, multiline: true, resize: true,
+                       width: screen_working_width,
                        alignments: [:right, :left],
                        column_widths: [0, 40])
       puts "\nFlags:"
       puts flags.render(:basic, multiline: true, resize: true,
+                       width: screen_working_width,
                        alignments: [:right, :left],
                        column_widths: [0, 40])
     end
