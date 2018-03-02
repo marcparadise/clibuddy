@@ -6,9 +6,9 @@ module CLIBuddy
   # --use-secure USE_SECURE=true?
   #
   # TODO - this is due for a refactor - not every attribute is used by every element.
-  FlowAction = Struct.new(:directive, :delay, :args, :msg, :children, :parent, :ui)
+  FlowAction = Struct.new(:directive,  :delay, :args, :msg, :children, :parent, :ui)
 
-  FlowEntry = Struct.new(:expression, :actions)
+  FlowEntry = Struct.new(:expression, :description, :actions)
   Message = Struct.new(:id, :lines)
   Command = Struct.new(:name, :flow, :definition, :usage)
   CommandDefinition = Struct.new(:arguments, :flags)
@@ -233,7 +233,7 @@ module CLIBuddy
             parse_error! p, "Expected an expression after 'for', got nothing."
           end
           flow = FlowEntry.new(expression)
-          flow.actions = parse_flow_actions(p.parser_from_children)
+          flow.actions = parse_flow_actions(p.parser_from_children, flow)
           flow_entries << flow
         else
           parse_error! p, "Expected 'for' expression to match on command line arguments and got #{p.current_token}"
@@ -288,7 +288,7 @@ module CLIBuddy
       action
     end
 
-    def parse_flow_actions(p, parent_action = nil)
+    def parse_flow_actions(p, flow, parent_action = nil)
       # spacer = ' '*caller.length
       if p.empty?
         where = parent_action.nil? ? "'for' clause" : "#{parent_action.directive}"
@@ -300,6 +300,8 @@ module CLIBuddy
         action.parent = parent_action
         action.directive = p.advance_token
         case p.current_token
+        when ".description"
+          flow.description = p.consume_to_eol
         when ".use"
           # Special case.  Also note this must be top level after 'for' so
           # we will probably want to do something about that.
@@ -323,7 +325,7 @@ module CLIBuddy
           end
         when ".spinner"
           action.msg = p.consume_to_eol
-          action.children = parse_flow_actions(p.parser_from_children, action)
+          action.children = parse_flow_actions(p.parser_from_children, flow, action)
           # TODO - let's clean up nested directives a bit so that "after TIMESPEC" can
           # exist in any directive regardless of parentage or type.  The only difference
           # is that some specific elements will require timespec.
@@ -356,7 +358,7 @@ module CLIBuddy
           # find disallowed things?
           #
           # Anyway, I'm all about quick for now because our reference file has no such errors...
-          action.children = parse_flow_actions(p.parser_from_children, action)
+          action.children = parse_flow_actions(p.parser_from_children, flow, action)
         when ".show-error"
           action.args = p.advance_token
           # TODO validate form of error identifier
