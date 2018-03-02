@@ -96,7 +96,12 @@ module CLIBuddy
         print cursor.clear_line
         print cursor.column(screen_working_width/2 - len/2)
         print msg
-        sleep 1 if x > 0
+        if x > 0
+          if breakable_sleep(1) == :interrupted
+            x=0
+          end
+        end
+
       end
       puts cursor.show
       print cursor.restore
@@ -217,9 +222,9 @@ module CLIBuddy
       delay_spec = action.delay
       case delay_spec[:unit]
       when :ms
-        sleep(1.0 / delay_spec[:value])
+        breakable_sleep(1.0 / delay_spec[:value])
       when :s
-        sleep(delay_spec[:value])
+        breakable_sleep(delay_spec[:value])
       end
     end
 
@@ -287,5 +292,11 @@ module CLIBuddy
     def format(msg)
       Formatters::OutputFormatter.format(msg, cmd.mapped_args)
     end
+    def breakable_sleep(time)
+      sleep(time)
+    rescue Interrupt
+      :interrupted
+    end
+
   end
 end
