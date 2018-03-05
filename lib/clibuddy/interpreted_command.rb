@@ -35,22 +35,22 @@ module CLIBuddy
 
     # Return any flow that matches the provided args or nil if none match
     def flow
-      cmd.flow.find { |f| args_match_flow? f }
+      cmd.flow.find{ |f| args_match_flow? f }
     end
 
     private
+
     def args_match_flow?(flow)
       flow_args = flow.expression.split
-      if flow_args.length > @leftover_args.length
+      if flow_args.length != provided_args.length
         return false
       end
-      @leftover_args.each_with_index do |arg, x|
+      provided_args.each_with_index do |arg, x|
         # TODO - easy to extend this to simplified pattern
         #        matching
         next if flow_args[x] == "*"
         next if arg == flow_args[x]
         return false
-
       end
       true
     end
