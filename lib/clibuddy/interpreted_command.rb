@@ -27,6 +27,7 @@ module CLIBuddy
       # Allow output to reference the name of the main
       # command as CMD, which makes less work when
       # we decide to change a command.
+      @mapped_args["CMD"] = cmd.name
       @mapped_args
       # TODO handle unexpected arguments, mapping them
       # such as EXTRA1, EXTRA2, etc.
@@ -40,12 +41,16 @@ module CLIBuddy
     private
     def args_match_flow?(flow)
       flow_args = flow.expression.split
+      if flow_args.length > @leftover_args.length
+        return false
+      end
       @leftover_args.each_with_index do |arg, x|
         # TODO - easy to extend this to simplified pattern
         #        matching
         next if flow_args[x] == "*"
         next if arg == flow_args[x]
         return false
+
       end
       true
     end

@@ -52,6 +52,9 @@ module CLIBuddy
 
     ######
 
+    def do_description(action)
+      # Metadata, no action
+    end
     def do_parallel(action)
       # For now, we just support multi-spinner for parallel
       # Other options could include progress bar, or

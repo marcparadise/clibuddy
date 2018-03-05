@@ -17,10 +17,18 @@ module CLIBuddy
         pastel = Pastel.new
         mapped_args.each do |name, provided|
           next if provided.nil?
-          line.gsub!(name, pastel.green(provided))
+          #line.gsub!(name, pastel.green(provided))
+          # identifiers escaped with prefixing / should not be replaced
+          # instead we'll keep as-is and remove the escape char below.
+          # d
+          line.gsub!(/(?<!\/)#{name}/, pastel.green(provided)) # { |m| " #{pastel.green(provided)}" }
         end
         line.gsub!(NEWLINE_ESCAPE, "\n")
-        line.gsub!(TAB_ESCAPE, "\t")
+        line.gsub!(TAB_ESCAPE, "    ")
+        # Escaped /PARAM_NAME should be rendered without the escape
+        # and without var replacement.
+        line.gsub!(/\/[A-Z_-]+/) { |m|  pastel.green(m[1..-1]) }
+
         # This works for simple inline coloring (and later formatting)
         # but wont' work for nested format tags.
         while line =~ /(.*)\.(red|green|blue|yellow|magenta|cyan|white)(.*)(\.x|$)(.*)$/
