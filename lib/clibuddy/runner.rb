@@ -65,6 +65,43 @@ module CLIBuddy
       action.ui.auto_spin
     end
 
+    def do_countdown(action)
+      require 'tty/cursor'
+      require 'pastel'
+      pastel = Pastel.new
+      cursor = TTY::Cursor
+      org_msg = action.msg
+      print "\n\n\n"
+      print cursor.save
+      puts cursor.hide
+      # Center among our newly created blank lines:
+      # for some reason I didn't care to explore cursor.move(0,-2) isn't.
+      print cursor.prev_line
+      print cursor.prev_line
+      print cursor.column(screen_working_width/2 - org_msg.length / 2)
+      print format(org_msg)
+      print cursor.next_line
+
+      for x in action.args.downto(0)
+        if x == 0
+          # To lazy to math the length of the unescaped message
+          # for centering...
+          len = "Continuing now.".length
+          msg = format(pastel.decorate("Continuing now.", :magenta, :bold) )
+        else
+          label = x == 1 ? "second" : "seconds"
+          len  = "Continuing in #{x} #{label}".length
+          msg = format(pastel.decorate("Continuing in #{x} #{label}", :magenta, :bold))
+        end
+        print cursor.clear_line
+        print cursor.column(screen_working_width/2 - len/2)
+        print msg
+        sleep 1 if x > 0
+      end
+      puts cursor.show
+      print cursor.restore
+    end
+
     def do_spinner(action)
       if child_of_parallel? action
         action.ui = action.parent.ui.register(":spinner :status")
@@ -142,13 +179,14 @@ module CLIBuddy
       # centering thing - looks crappy.  This is here until
       # we can teach tty::table about making itself only big enough
       # to contain its text
-      width = [TTY::Screen.width, 80].min
-      puts action.ui.render(:unicode, multiline: true, resize: true,
-                                      width: width)
-      # TODO better handling in .table directive will let the user
-      # control these types of things.
+      puts action.ui.render(:unicode, multiline: true,
+                            resize: true, width: screen_working_width)
                        #alignments: [:right, :left],
-                       #column_widths: [0, 40])
+                       #column_widths: [0, 40], indent: 4)
+    end
+
+    def screen_working_width
+      @screen_working_width ||= [TTY::Screen.width, 80].min
     end
 
     def do_show_error(action)
@@ -191,7 +229,7 @@ module CLIBuddy
         raise Errors::NoSuchCommand.new(name)
       end
       begin
-        cmd = InterpretedCommand.new(cmd, provided_args)
+        icmd = InterpretedCommand.new(cmd, provided_args)
         # Special case - if the flow contains the special directive '.use'
         # it will pull in the version of the flow that matches .use params.
         # This lets us quickly set up multiple command patterns that do the same thing
@@ -200,19 +238,18 @@ module CLIBuddy
         # Right now it won't behave if you do things before or after use;
         # a slight refactor will make it possible to pull in other command
         # usage behaviors anywhere in a flow.
-        if cmd.flow != nil
-          if cmd.flow.actions != nil && !cmd.flow.actions.empty?
-            first_action = cmd.flow.actions[0]
-            if first_action.directive == ".use"
-              # Create this command just as if first_action.args were the
-              # provided arguments.
-              # TODO - handle not found differently in this case,
-              # because it'll get confusing if we don't.
-              cmd = InterpretedCommand.new(cmd,first_action.args)
-            end
+        if icmd.flow && icmd.flow.actions != nil && !icmd.flow.actions.empty?
+          first_action = icmd.flow.actions[0]
+          if first_action.directive == ".use"
+
+            # Create this command just as if first_action.args were the
+            # provided arguments.
+            # TODO - handle not found differently in this case,
+            # because it'll get confusing if we don't.
+            icmd = InterpretedCommand.new(cmd, first_action.args)
           end
         end
-        cmd
+        icmd
       rescue OptionParser::ParseError => e
         puts "Could not parse the arguments provided to '#{cmd.name}': #{e.message}"
         exit 1
@@ -226,7 +263,11 @@ module CLIBuddy
           do_show_usage(nil)
           exit 1
         else
-          raise Errors::NoMatchingFlow.new(cmd.name, cmd.provided_args)
+          if @original_cmd
+            raise Errors::NoMatchingFlow.new(cmd.name, "#{cmd.provided_args} via #{@original_cmd.provided_args}")
+          else
+            raise Errors::NoMatchingFlow.new(cmd.name, cmd.provided_args)
+          end
         end
       end
       flow

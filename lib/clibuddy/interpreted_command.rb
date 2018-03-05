@@ -28,7 +28,8 @@ module CLIBuddy
 
     # Return any flow that matches the provided args or nil if none match
     def flow
-      cmd.flow.find { |f| f.expression == provided_args.join(" ") }
+			looking_for = provided_args.join(" ")
+      cmd.flow.find { |f| f.expression == looking_for }
     end
 
     private
