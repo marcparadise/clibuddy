@@ -10,6 +10,8 @@ module CLIBuddy
   class Main
     def run(argv)
       @descriptor_file = "sample.bdy"
+      @scale = 1.0
+
       # TODO actual good handling for args, defintion file, etc.
       @opt_parser = OptionParser.new do |opts|
         opts.banner = <<-BANNER
@@ -18,14 +20,27 @@ Usage: clibuddy [options] run COMMAND ARGUMENTS...
 
 Options:
 BANNER
+        opts.on('-s SCALE', "--scale SCALE", "Speed at which to play back delays, default 1.0") do |v|
+          begin
+            # TODO validate not huge, not negative...
+            @scale = Float(v)
+          rescue
+            puts "WARNING: #{v} not a valid scale. Use number such as 0, 0.5, 1.75. Curently using default of 1.0"
+          end
+        end
+
         opts.on("-f PATH", "--file PATH", "Buddy file with command description") do |v|
           @descriptor_file = v
         end
       end
 
-      i = argv.find_index {|a| a == "run" || a == "generate"}
+      permitted_cmds = %w{run generate play}
+      i = argv.find_index {|a| permitted_cmds.include? a}
       if i.nil?
-        puts "Must use action 'run' or 'generate'"
+        puts "Action is required."
+        puts "Supported actions are:"
+        permitted_cmds.sort.each {|c| puts " - #{c}"}
+
         puts @opt_parser.banner
         exit 1
       end
@@ -43,12 +58,17 @@ BANNER
       b = CLIBuddy::Builder.new()
       b.load(@descriptor_file)
       case action
+        #TODO subcommand this!
+        #TODO defer include loading, it takes almost a second per run to start doing things
       when "generate"
         generator = CLIBuddy::Generator.new(b, cmd_name, @descriptor_file)
         generator.generate
       when "run"
-        runner = CLIBuddy::Runner.new(b, cmd_name, cmd_args)
+        runner = CLIBuddy::Runner.new(b, cmd_name, cmd_args, scale: @scale)
         runner.run
+      when "play"
+        # player = CLIBuddy::Player.new(b, cmd_name, cmd_args)
+        # player.play
       else
 
       end

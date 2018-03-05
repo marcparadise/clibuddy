@@ -19,20 +19,42 @@ module CLIBuddy
 
     # Returns a mapping from required arg name to provided arg. Values will be nil if a required arg is not provided.
     def mapped_args
-      mapped_args = {}
+      return @mapped_args if @mapped_args
+      @mapped_args = {}
       cmd.definition.arguments.each_with_index do |arg, i|
         mapped_args[arg.name] = @leftover_args[i]
       end
-      mapped_args
+      # Allow output to reference the name of the main
+      # command as CMD, which makes less work when
+      # we decide to change a command.
+      @mapped_args["CMD"] = cmd.name
+      @mapped_args
+      # TODO handle unexpected arguments, mapping them
+      # such as EXTRA1, EXTRA2, etc.
     end
 
     # Return any flow that matches the provided args or nil if none match
     def flow
-			looking_for = provided_args.join(" ")
-      cmd.flow.find { |f| f.expression == looking_for }
+      cmd.flow.find{ |f| args_match_flow? f }
     end
 
     private
+
+    def args_match_flow?(flow)
+      flow_args = flow.expression.split
+      if flow_args.length != provided_args.length
+        return false
+      end
+      provided_args.each_with_index do |arg, x|
+        # TODO - easy to extend this to simplified pattern
+        #        matching
+        next if flow_args[x] == "*"
+        next if arg == flow_args[x]
+        return false
+      end
+      true
+    end
+
 
     # All we care about doing is parsing the provided args against the command definition. If there are any
     # missing required args we should output some kind of standard 'arguments missing' error to the user.

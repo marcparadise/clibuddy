@@ -14,9 +14,10 @@ module CLIBuddy
 
     # The runner's job is to parse the user supplied args, match them against the parsed flow and then invoke any actions
     # accordingly
-    def initialize(parser, input_cmd, input_cmd_args)
+    def initialize(parser, input_cmd, input_cmd_args, opts = { } )
       # TODO parser now holds a builder, lets rename this
       @parser = parser
+      @opts = opts
       @cmd = lookup_command(input_cmd, input_cmd_args)
     end
 
@@ -51,6 +52,9 @@ module CLIBuddy
 
     ######
 
+    def do_description(action)
+      # Metadata, no action
+    end
     def do_parallel(action)
       # For now, we just support multi-spinner for parallel
       # Other options could include progress bar, or
@@ -82,10 +86,9 @@ module CLIBuddy
       print format(org_msg)
       print cursor.next_line
 
-      for x in action.args.downto(0)
+      x = action.args
+      while x >= 0
         if x == 0
-          # To lazy to math the length of the unescaped message
-          # for centering...
           len = "Continuing now.".length
           msg = format(pastel.decorate("Continuing now.", :magenta, :bold) )
         else
@@ -96,9 +99,14 @@ module CLIBuddy
         print cursor.clear_line
         print cursor.column(screen_working_width/2 - len/2)
         print msg
-        sleep 1 if x > 0
+        if x > 0
+          if breakable_sleep(1) == :interrupted
+            x = 0
+          end
+        end
+        x-=1
       end
-      puts cursor.show
+      print cursor.show
       print cursor.restore
     end
 
@@ -201,10 +209,12 @@ module CLIBuddy
 
       puts "Arguments:"
       puts args.render(:basic, multiline: true, resize: true,
+                       width: screen_working_width,
                        alignments: [:right, :left],
                        column_widths: [0, 40])
       puts "\nFlags:"
       puts flags.render(:basic, multiline: true, resize: true,
+                       width: screen_working_width,
                        alignments: [:right, :left],
                        column_widths: [0, 40])
     end
@@ -215,9 +225,9 @@ module CLIBuddy
       delay_spec = action.delay
       case delay_spec[:unit]
       when :ms
-        sleep(1.0 / delay_spec[:value])
+        breakable_sleep(1.0 / delay_spec[:value])
       when :s
-        sleep(delay_spec[:value])
+        breakable_sleep(delay_spec[:value])
       end
     end
 
@@ -285,5 +295,11 @@ module CLIBuddy
     def format(msg)
       Formatters::OutputFormatter.format(msg, cmd.mapped_args)
     end
+    def breakable_sleep(time)
+      sleep(time * (@opts[:scale] || 1.0))
+    rescue Interrupt
+      :interrupted
+    end
+
   end
 end
