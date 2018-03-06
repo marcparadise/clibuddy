@@ -359,11 +359,12 @@ module CLIBuddy
           #
           # Anyway, I'm all about quick for now because our reference file has no such errors...
           action.children = parse_flow_actions(p.parser_from_children, flow, action)
-        when ".show-error"
+        when /^[.](show-error|show-message)$/
+          t = p.current_token
           action.args = p.advance_token
           # TODO validate form of error identifier
           if action.args == :EOL
-            parse_error! p, "Expected message identifier after '.show-error'"
+            parse_error! p, "Expected message identifier after '#{t}'"
           end
         when ".show-usage"
           t = p.advance_token
