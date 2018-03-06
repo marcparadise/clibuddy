@@ -1,5 +1,6 @@
 require 'forwardable'
 require 'optparse'
+require 'clibuddy/runner/errors'
 
 module CLIBuddy
   class InterpretedCommand
@@ -62,6 +63,25 @@ module CLIBuddy
     # one. If there are no validation errors this has properly mapped provided args to options so they can be
     # easily returned from #mapped_args later
     def validate_args
+      # First, validate that no capture names (for flags or arugments) overlap
+      capture_names = Set.new
+      cmd.definition.arguments.each do |arg|
+        name = arg.name
+        if capture_names.include?(name)
+          raise Runner::Errors::CaptureNameSpecifiedMultipleTimes.new(name)
+        end
+        capture_names << name
+      end
+      cmd.definition.flags.each do |flag|
+        arg = flag.arg
+        next if arg.nil?
+        if capture_names.include?(arg)
+          raise Runner::Errors::CaptureNameSpecifiedMultipleTimes.new(arg)
+        end
+        capture_names << arg
+      end
+
+      mapped_flags = {}
       opt_parser = OptionParser.new do |opts|
         cmd.definition.flags.each do |flag|
           parser_args = []

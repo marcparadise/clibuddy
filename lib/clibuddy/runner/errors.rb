@@ -36,6 +36,13 @@ module CLIBuddy
           super("CLIRUN003", msg)
         end
       end
+
+      class CaptureNameSpecifiedMultipleTimes < EngineRuntimeError
+        def initialize(name)
+          msg = "You cannot specify the capture name '#{name}' twice"
+          super("CLIRUN004", msg)
+        end
+      end
     end
   end
 end
