@@ -70,44 +70,9 @@ module CLIBuddy
     end
 
     def do_countdown(action)
-      require 'tty/cursor'
-      require 'pastel'
-      pastel = Pastel.new
-      cursor = TTY::Cursor
-      org_msg = action.msg
-      print "\n\n\n"
-      print cursor.save
-      puts cursor.hide
-      # Center among our newly created blank lines:
-      # for some reason I didn't care to explore cursor.move(0,-2) isn't.
-      print cursor.prev_line
-      print cursor.prev_line
-      print cursor.column(screen_working_width/2 - org_msg.length / 2)
-      print format(org_msg)
-      print cursor.next_line
-
-      x = action.args
-      while x >= 0
-        if x == 0
-          len = "Continuing now.".length
-          msg = format(pastel.decorate("Continuing now.", :magenta, :bold) )
-        else
-          label = x == 1 ? "second" : "seconds"
-          len  = "Continuing in #{x} #{label}".length
-          msg = format(pastel.decorate("Continuing in #{x} #{label}", :magenta, :bold))
-        end
-        print cursor.clear_line
-        print cursor.column(screen_working_width/2 - len/2)
-        print msg
-        if x > 0
-          if breakable_sleep(1) == :interrupted
-            x = 0
-          end
-        end
-        x-=1
-      end
-      print cursor.show
-      print cursor.restore
+      require "clibuddy/formatters/countdown"
+      cd = Formatters::Countdown.new(action.args, action.msg)
+      cd.render
     end
 
     def do_spinner(action)
