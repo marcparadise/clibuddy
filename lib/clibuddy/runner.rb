@@ -197,8 +197,12 @@ module CLIBuddy
       @screen_working_width ||= [TTY::Screen.width, 80].min
     end
 
-    def do_show_error(action)
+    def do_show_message(action)
       puts format(lookup_message(action.args))
+    end
+
+    def do_show_error(action)
+      do_show_message(action)
     end
 
     def do_show_usage(_action)

@@ -1,11 +1,12 @@
 require 'forwardable'
 require 'optparse'
+require 'clibuddy/runner/errors'
 
 module CLIBuddy
   class InterpretedCommand
     extend Forwardable
 
-    attr_reader :cmd, :provided_args
+    attr_reader :cmd, :provided_args, :mapped_args
 
     def_delegators :@cmd, :usage, :definition, :arguments, :name
 
@@ -18,20 +19,6 @@ module CLIBuddy
     end
 
     # Returns a mapping from required arg name to provided arg. Values will be nil if a required arg is not provided.
-    def mapped_args
-      return @mapped_args if @mapped_args
-      @mapped_args = {}
-      cmd.definition.arguments.each_with_index do |arg, i|
-        mapped_args[arg.name] = @leftover_args[i]
-      end
-      # Allow output to reference the name of the main
-      # command as CMD, which makes less work when
-      # we decide to change a command.
-      @mapped_args["CMD"] = cmd.name
-      @mapped_args
-      # TODO handle unexpected arguments, mapping them
-      # such as EXTRA1, EXTRA2, etc.
-    end
 
     # Return any flow that matches the provided args or nil if none match
     def flow
@@ -62,6 +49,25 @@ module CLIBuddy
     # one. If there are no validation errors this has properly mapped provided args to options so they can be
     # easily returned from #mapped_args later
     def validate_args
+      # First, validate that no capture names (for flags or arugments) overlap
+      capture_names = Set.new
+      cmd.definition.arguments.each do |arg|
+        name = arg.name
+        if capture_names.include?(name)
+          raise Runner::Errors::CaptureNameSpecifiedMultipleTimes.new(name)
+        end
+        capture_names << name
+      end
+      cmd.definition.flags.each do |flag|
+        arg = flag.arg
+        next if arg.nil?
+        if capture_names.include?(arg)
+          raise Runner::Errors::CaptureNameSpecifiedMultipleTimes.new(arg)
+        end
+        capture_names << arg
+      end
+
+      mapped_flags = {}
       opt_parser = OptionParser.new do |opts|
         cmd.definition.flags.each do |flag|
           parser_args = []
@@ -81,13 +87,27 @@ module CLIBuddy
             s += "#{flag.arg.upcase}" unless flag.arg.nil?
             parser_args << s
           end
-          opts.on(*parser_args)
+          opts.on(*parser_args) do |value|
+            mapped_flags[flag.arg.upcase] = value unless flag.arg.nil?
+          end
         end
       end
       # parse! destructively removes args and we want to see what non-option args were passed to use in
       # mapped_args later
-      @leftover_args = provided_args.dup
-      opt_parser.parse!(@leftover_args)
+      leftover_args = provided_args.dup
+      opt_parser.parse!(leftover_args)
+
+      # Now populate @mapped_args with all captured args from flags and command line
+      @mapped_args = mapped_flags.dup
+      cmd.definition.arguments.each_with_index do |arg, i|
+        @mapped_args[arg.name] = leftover_args[i]
+      end
+      # Allow output to reference the name of the main
+      # command as CMD, which makes less work when
+      # we decide to change a command.
+      @mapped_args["CMD"] = cmd.name
+      # TODO handle unexpected arguments, mapping them
+      # such as EXTRA1, EXTRA2, etc.
     end
   end
 end
