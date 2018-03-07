@@ -126,10 +126,12 @@ module CLIBuddy
       # and do a simple keystroke listener because the API doesn't seem to offer the former.
       require 'tty/prompt'
 
+      last_flow = pos+1 == count
+
       choices = []
       choices << { name: "Previous", value: :prev } if pos > 0
       choices << { name: "Replay", value: :replay}
-      choices << { name: "Next", value: :next}
+      choices << { name: "Next", value: :next} unless last_flow
       choices << { name: "Quit", value: :quit}
 
       prompt = TTY::Prompt.new
@@ -139,7 +141,10 @@ module CLIBuddy
           # API docs suggest I can just do menu.choice choice, but that displays the actual hash.
           menu.choice c[:name], c[:value]
         end
-        menu.default(choices.length - 1)
+        # We want the default to always be 'next' unless we are on the last flow, then we want it to be 'quit'
+        default = choices.length
+        default -= 1 unless last_flow
+        menu.default(default)
       end
     end
   end
