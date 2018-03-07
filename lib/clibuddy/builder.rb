@@ -102,25 +102,25 @@ module CLIBuddy
           if command.flow.nil?
             command.flow = parse_command_flow(p.parser_from_children)
           else
-            raise parse_error! p, "'flow' is already defined above.\n"\
+            parse_error! p, "'flow' is already defined above.\n"\
               "Please add further flow definitions to that block."
           end
         when 'usage'
           if command.usage.nil?
             command.usage = parse_command_usage(p.parser_from_children)
           else
-            raise parse_error! p, "'usage' is already defined above.\n"\
+            parse_error! p, "'usage' is already defined above.\n"\
               "Please add further usage content to that block."
           end
         when 'definition'
           if command.definition.nil?
             command.definition = parse_command_definition(p.parser_from_children)
           else
-            raise parse_error! p, "'definition' is already defined above.\n"\
+            parse_error! p, "'definition' is already defined above.\n"\
               "Please add further definition content to that block."
           end
         else
-          raise parse_error! p, "After #{name}, expected one of 'flow', 'usage', or 'definition', or end of section; instead I got #{p.current_token}"
+          parse_error! p, "After #{name}, expected one of 'flow', 'usage', or 'definition', or end of section; instead I got #{p.current_token}"
         end
       end
       command
@@ -310,6 +310,13 @@ module CLIBuddy
             parse_error! p, "Expected matching argument list after 'for'"
           end
           action.args = remaining.split(/\s/)
+
+        when ".wait-for-key"
+          msg = p.consume_to_eol
+          if msg == :EOL
+            parser_error! p, "Expected message to go with .wait-for-key and got none."
+          end
+          action.msg = msg
 
         when ".countdown"
           dur = p.advance_token

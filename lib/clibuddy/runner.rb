@@ -53,6 +53,13 @@ module CLIBuddy
 
     ######
 
+    def do_wait_for_key(action)
+      require 'tty/prompt'
+      @prompt = TTY::Prompt.new(interrupt: :exit)
+      @prompt.keypress(format(action.msg))
+    # TODO rescue Interrupt
+    end
+
     def do_description(action)
       # Metadata, no action
     end
@@ -73,6 +80,17 @@ module CLIBuddy
     def do_use(action)
       # Replace wildcards in the action spec with the provided command args
       # so that they continue to work in the sub-flow run
+      # TODO - ideally this will let the user specify the name of the argument,
+      # and that will be translated as we do for
+      x = 0;
+      max = @cmd.provided_args.length
+      while (x < max)
+        proposed = @cmd.mapped_args[action.args[x]]
+        # use the already-mapped named value if we got a named arg
+        action.args[x] = proposed  if proposed && action.args[x] =~ /.*[A-Z0-9_-]+/
+        x += 1
+      end
+
       runner = Runner.new(@parser, @cmd_name, action.args, @opts)
       runner.run
     end
