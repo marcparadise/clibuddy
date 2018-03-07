@@ -15,13 +15,10 @@ module CLIBuddy
 
       def self.format_line(line, mapped_args)
         pastel = Pastel.new
-        line.split(" ").each do |token|
+        line.split(/[\[\]\s\{\)\}\(.,:;]/).each do |token|
           # TODO - Crappy hack in here - knowing that we often
           # put tokens inside of [ ] , we explicitly also try to match
           # on removed first/last char
-          if token =~ /\[(.*)\]/
-            token = $1
-          end
 
           if mapped_args.has_key? token
             line.gsub!(/(?<!\/e)#{token}/, pastel.green(mapped_args[token]))
