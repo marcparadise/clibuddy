@@ -30,6 +30,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.add_dependency("tty-spinner")
+  spec.add_dependency("tty-prompt")
   spec.add_dependency("tty-screen")
   spec.add_dependency("tty-cursor")
   spec.add_dependency("tty-table")

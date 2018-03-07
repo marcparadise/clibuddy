@@ -18,6 +18,7 @@ module CLIBuddy
       # TODO parser now holds a builder, lets rename this
       @parser = parser
       @opts = opts
+      @cmd_name = input_cmd
       @cmd = lookup_command(input_cmd, input_cmd_args)
     end
 
@@ -52,62 +53,52 @@ module CLIBuddy
 
     ######
 
+    def do_wait_for_key(action)
+      require 'tty/prompt'
+      @prompt = TTY::Prompt.new(interrupt: :exit)
+      @prompt.keypress(format(action.msg))
+    # TODO rescue Interrupt
+    end
+
     def do_description(action)
       # Metadata, no action
     end
+
     def do_parallel(action)
-      # For now, we just support multi-spinner for parallel
-      # Other options could include progress bar, or
-      # plain text refreshed inline.
+      # For now, we just support multi-spinner for parallel operations
+      # Other options could include progress bar, or plain text refreshed inline.
       action.ui = ::TTY::Spinner::Multi.new(":spinner #{format(action.msg)}", format: :spin)
     end
 
     def do_post_parallel(action)
-      # This 'post' function is called after child components are setup for
+      # This 'post' function is called after child components are setup
       # we'll invoke ui.auto_spin  here, which will start the spinners and execute their jobs -
       # which are just further calls into run_flow_actions
       action.ui.auto_spin
     end
 
-    def do_countdown(action)
-      require 'tty/cursor'
-      require 'pastel'
-      pastel = Pastel.new
-      cursor = TTY::Cursor
-      org_msg = action.msg
-      print "\n\n\n"
-      print cursor.save
-      puts cursor.hide
-      # Center among our newly created blank lines:
-      # for some reason I didn't care to explore cursor.move(0,-2) isn't.
-      print cursor.prev_line
-      print cursor.prev_line
-      print cursor.column(screen_working_width/2 - org_msg.length / 2)
-      print format(org_msg)
-      print cursor.next_line
-
-      x = action.args
-      while x >= 0
-        if x == 0
-          len = "Continuing now.".length
-          msg = format(pastel.decorate("Continuing now.", :magenta, :bold) )
-        else
-          label = x == 1 ? "second" : "seconds"
-          len  = "Continuing in #{x} #{label}".length
-          msg = format(pastel.decorate("Continuing in #{x} #{label}", :magenta, :bold))
-        end
-        print cursor.clear_line
-        print cursor.column(screen_working_width/2 - len/2)
-        print msg
-        if x > 0
-          if breakable_sleep(1) == :interrupted
-            x = 0
-          end
-        end
-        x-=1
+    def do_use(action)
+      # Replace wildcards in the action spec with the provided command args
+      # so that they continue to work in the sub-flow run
+      # TODO - ideally this will let the user specify the name of the argument,
+      # and that will be translated as we do for
+      x = 0;
+      max = @cmd.provided_args.length
+      while (x < max)
+        proposed = @cmd.mapped_args[action.args[x]]
+        # use the already-mapped named value if we got a named arg
+        action.args[x] = proposed  if proposed && action.args[x] =~ /.*[A-Z0-9_-]+/
+        x += 1
       end
-      print cursor.show
-      print cursor.restore
+
+      runner = Runner.new(@parser, @cmd_name, action.args, @opts)
+      runner.run
+    end
+
+    def do_countdown(action)
+      require "clibuddy/formatters/countdown"
+      cd = Formatters::Countdown.new(action.args, action.msg)
+      cd.render
     end
 
     def do_spinner(action)
@@ -243,27 +234,7 @@ module CLIBuddy
         raise Errors::NoSuchCommand.new(name)
       end
       begin
-        icmd = InterpretedCommand.new(cmd, provided_args)
-        # Special case - if the flow contains the special directive '.use'
-        # it will pull in the version of the flow that matches .use params.
-        # This lets us quickly set up multiple command patterns that do the same thing
-        # with copying and pasting full definitions
-        #
-        # Right now it won't behave if you do things before or after use;
-        # a slight refactor will make it possible to pull in other command
-        # usage behaviors anywhere in a flow.
-        if icmd.flow && icmd.flow.actions != nil && !icmd.flow.actions.empty?
-          first_action = icmd.flow.actions[0]
-          if first_action.directive == ".use"
-
-            # Create this command just as if first_action.args were the
-            # provided arguments.
-            # TODO - handle not found differently in this case,
-            # because it'll get confusing if we don't.
-            icmd = InterpretedCommand.new(cmd, first_action.args)
-          end
-        end
-        icmd
+        InterpretedCommand.new(cmd, provided_args)
       rescue OptionParser::ParseError => e
         puts "Could not parse the arguments provided to '#{cmd.name}': #{e.message}"
         exit 1
