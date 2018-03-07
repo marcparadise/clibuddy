@@ -14,11 +14,12 @@ module CLIBuddy
       # TODO this and even in run/generate - we could just pass in the resolved command so
       # each one doesn't have to look it up separtely.
       @cmd_name = command
+      @autoplay_delay = opts[:autoplay_delay] || 10.0
       # TODO 'join' is a workaround to remaining args always coming in as a list.
       filter_text = filter.join(" ").gsub("*", ".*").gsub("?", ".?")
       @filter = filter_text.length > 0 ? Regexp.new(filter_text) : /.*/
-      @tt = TermTyper.new
       @opts[:scale] ||= 1.0
+      @tt = TermTyper.new(@opts[:scale])
 
     end
 
@@ -76,7 +77,9 @@ module CLIBuddy
       @tt.show_pseudo_bash_prompt
       @tt.type "#{to_type}\n"
       # TODO - can't directly use expression -- need a strategy for wildcard args.
-      runner = CLIBuddy::Runner.new(@builder, @cmd_name, match_on.split(" "), scale: @scale)
+      runner = CLIBuddy::Runner.new(@builder, @cmd_name,
+                                    match_on.split(" "),
+                                    scale: @opts[:scale])
       runner.run
       @tt.show_pseudo_bash_prompt
       puts @cursor.show
@@ -93,7 +96,7 @@ module CLIBuddy
     def show_banner(msg, num, count)
       require 'pastel'
       @tt.banner("#{Pastel.new.decorate("Current Flow (#{num + 1} / #{count})", :underline)}\n#{msg}")
-      sleep 1
+      sleep 1.0*@opts[:scale]
     end
 
     def next_action(pos, count)
@@ -109,7 +112,7 @@ module CLIBuddy
       if pos + 1 == count
         return :quit
       end
-      cd = Formatters::Countdown.new(10.0, "Next up: flow #{pos + 1} / #{count}.")
+      cd = Formatters::Countdown.new(@autoplay_delay, "Next up: flow #{pos + 1} / #{count}.")
       if cd.render == :interrupted
         return :quit
       end

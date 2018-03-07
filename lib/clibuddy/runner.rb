@@ -18,6 +18,7 @@ module CLIBuddy
       # TODO parser now holds a builder, lets rename this
       @parser = parser
       @opts = opts
+      @cmd_name = input_cmd
       @cmd = lookup_command(input_cmd, input_cmd_args)
     end
 
@@ -68,6 +69,13 @@ module CLIBuddy
       # which are just further calls into run_flow_actions
       action.ui.auto_spin
     end
+
+    def do_use(action)
+      runner = Runner.new(@parser, @cmd_name, action.args, @opts)
+      runner.run
+    end
+
+
 
     def do_countdown(action)
       require "clibuddy/formatters/countdown"
@@ -208,27 +216,7 @@ module CLIBuddy
         raise Errors::NoSuchCommand.new(name)
       end
       begin
-        icmd = InterpretedCommand.new(cmd, provided_args)
-        # Special case - if the flow contains the special directive '.use'
-        # it will pull in the version of the flow that matches .use params.
-        # This lets us quickly set up multiple command patterns that do the same thing
-        # with copying and pasting full definitions
-        #
-        # Right now it won't behave if you do things before or after use;
-        # a slight refactor will make it possible to pull in other command
-        # usage behaviors anywhere in a flow.
-        if icmd.flow && icmd.flow.actions != nil && !icmd.flow.actions.empty?
-          first_action = icmd.flow.actions[0]
-          if first_action.directive == ".use"
-
-            # Create this command just as if first_action.args were the
-            # provided arguments.
-            # TODO - handle not found differently in this case,
-            # because it'll get confusing if we don't.
-            icmd = InterpretedCommand.new(cmd, first_action.args)
-          end
-        end
-        icmd
+        InterpretedCommand.new(cmd, provided_args)
       rescue OptionParser::ParseError => e
         puts "Could not parse the arguments provided to '#{cmd.name}': #{e.message}"
         exit 1

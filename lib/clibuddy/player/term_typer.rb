@@ -3,13 +3,13 @@ module CLIBuddy
     class TermTyper
       attr_accessor :term_width
 
-      def initialize(options: {})
+      def initialize(scale = 1.0)
         require 'tty/screen'
         require 'tty/cursor'
         @cursor = TTY::Cursor
-        @options = options
+        @scale = scale
+        @delay = 0.1
         @term_width = [TTY::Screen.width, 80].min
-        set_default_option_value(:delay, 0.1)
       end
 
       def banner(message)
@@ -25,7 +25,7 @@ module CLIBuddy
 
       def show_pseudo_bash_prompt(post_delay = 0.0)
         print "~$ "
-        sleep post_delay if post_delay > 0.0
+        sleep (post_delay * scale) if post_delay > 0.0
       end
 
       def type(message)
@@ -35,7 +35,7 @@ module CLIBuddy
         while (x < len) do
           print message[x]
           x += 1
-          sleep optval(:delay)
+          sleep @delay * @scale
         end
       rescue Interrupt
         while (x < len) do
@@ -46,13 +46,6 @@ module CLIBuddy
 
       private
 
-      def optval(name)
-        @options[name]
-      end
-
-      def set_default_option_value(option, value)
-        @options[option] = value unless @options.has_key? option
-      end
     end
   end
 end

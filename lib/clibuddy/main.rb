@@ -7,12 +7,14 @@ module CLIBuddy
       @scale = 1.0
       @banner = true
       @autoplay = false
+      @autoplay_delay = 5.0
 
       # TODO actual good handling for args, defintion file, etc.
       @opt_parser = OptionParser.new do |opts|
         opts.banner = <<-BANNER
 Usage: clibuddy [options] run COMMAND ARGUMENTS...
        clibuddy [options] generate COMMAND
+       clibuddy [options] play COMMAND FILTER
 
 Options:
 BANNER
@@ -21,11 +23,15 @@ BANNER
             # TODO validate not huge, not negative...
             @scale = Float(v)
           rescue
-            puts "WARNING: #{v} not a valid scale. Use number such as 0, 0.5, 1.75. Curently using default of 1.0"
+            puts "WARNING: #{v} not a valid scale. Use number such as 0, 0.5, 1.75. Curently using default of #{@scale}"
           end
         end
-        opts.on('-a', "--autoplay", "With 'play', automatically continue to the next flow without prompting. Default: prompt") do
+        opts.on('-a [TIME]', "--autoplay [TIME]", "With 'play', automatically continue to the next flow without prompting. Optionally provide the duration to pause between flows. Default: prompt") do |val|
           @autoplay = true
+          if !val.nil?
+            # TODO - tell the user we're ignoring them
+            @autoplay_delay = Float(val) rescue @autoplay_delay
+          end
         end
         opts.on('-b', "--[no-]banner", "With 'play', show banner at the start of each flow. Default: show") do |v|
           @banner = v
@@ -63,7 +69,9 @@ BANNER
     end
 
     def run_command(command, name, args)
+      require "clibuddy/runner"
       require "clibuddy/builder"
+      require "clibuddy/player"
       b = CLIBuddy::Builder.new()
       b.load(@descriptor_file)
       case command
@@ -74,15 +82,14 @@ BANNER
         generator = CLIBuddy::Generator.new(b, name, @descriptor_file)
         generator.generate
       when "run"
-        require "clibuddy/runner"
         runner = CLIBuddy::Runner.new(b, name, args, scale: @scale)
         runner.run
       when "play"
-        require "clibuddy/player"
         player = CLIBuddy::Player.new(b, name, args,
                                       scale: @scale,
                                       banner: @banner,
-                                      autoplay: @autoplay)
+                                      autoplay: @autoplay,
+                                      autoplay_delay: @autoplay_delay)
         player.play
       end
       return 0
