@@ -63,8 +63,11 @@ module CLIBuddy
 
 
     def find_flows
+      # TODO may be time for some error consolidation
+      require 'clibuddy/runner/errors'
       flows = []
       cmd = @builder.lookup_command(@cmd_name)
+      raise Runner::Errors::NoSuchCommand.new(@cmd_name) if cmd.nil?
       cmd.flow.each do |flow|
         flows << flow if @filter =~ flow.expression
       end
@@ -72,7 +75,12 @@ module CLIBuddy
     end
 
     def run_flow(flow)
-      match_on = flow.expression.gsub(/\*/, 'somevalue')
+      valcount = 0
+      match_on = flow.expression.gsub(/\*/) do
+        valcount += 1
+        "gen-value-#{valcount}"
+      end
+
       to_type = "#{@cmd_name} #{match_on}"
       @tt.show_pseudo_bash_prompt
       @tt.type "#{to_type}\n"
