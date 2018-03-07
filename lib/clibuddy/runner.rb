@@ -56,26 +56,33 @@ module CLIBuddy
     def do_description(action)
       # Metadata, no action
     end
+
     def do_parallel(action)
-      # For now, we just support multi-spinner for parallel
-      # Other options could include progress bar, or
-      # plain text refreshed inline.
+      # For now, we just support multi-spinner for parallel operations
+      # Other options could include progress bar, or plain text refreshed inline.
       action.ui = ::TTY::Spinner::Multi.new(":spinner #{format(action.msg)}", format: :spin)
     end
 
     def do_post_parallel(action)
-      # This 'post' function is called after child components are setup for
+      # This 'post' function is called after child components are setup
       # we'll invoke ui.auto_spin  here, which will start the spinners and execute their jobs -
       # which are just further calls into run_flow_actions
       action.ui.auto_spin
     end
 
     def do_use(action)
-      runner = Runner.new(@parser, @cmd_name, action.args, @opts)
+      # Replace wildcards in the action spec with the provided command args
+      # so that they continue to work in the sub-flow run
+      args = action.args.dup
+      cmd.provided_args.each_with_index do |a, x|
+        puts "Eval: #{args[x]} and #{a}"
+
+        args[x] = a if args[x] == "*"
+      end
+
+      runner = Runner.new(@parser, @cmd_name, args, @opts)
       runner.run
     end
-
-
 
     def do_countdown(action)
       require "clibuddy/formatters/countdown"
