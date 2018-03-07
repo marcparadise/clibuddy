@@ -75,11 +75,9 @@ module CLIBuddy
       # so that they continue to work in the sub-flow run
       args = action.args.dup
       cmd.provided_args.each_with_index do |a, x|
-        puts "Eval: #{args[x]} and #{a}"
-
-        args[x] = a if args[x] == "*"
+        next if x == 0
+        args[x] = a if x >= args.length || args[x] == "*"
       end
-
       runner = Runner.new(@parser, @cmd_name, args, @opts)
       runner.run
     end
